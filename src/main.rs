@@ -1,6 +1,8 @@
 extern crate core;
 
 use std::collections::HashMap;
+use std::fs::File;
+use std::io::BufWriter;
 use std::str::FromStr;
 
 #[derive(Debug)]
@@ -31,7 +33,28 @@ fn main() {
         .map(self::parse_data_from_row)
         .collect();
 
-    println!("{:#?}", nodes);
+    let mut edge_map = HashMap::<u32, Vec<(u32, u8)>>::new();
+    for node in nodes {
+        match node {
+            YarrpRow::V4(row) => {
+                if !edge_map.contains_key(&row.target_ip) {
+                    let new_list = Vec::<(u32, u8)>::new();
+                    edge_map.insert(row.target_ip, new_list);
+                }
+                let list = edge_map.get_mut(&row.target_ip).unwrap();
+                list.push((row.hop_ip, row.hop_count));
+            }
+            _ => {
+                panic!("V6 not supported yet")
+            }
+        }
+    }
+
+    //let file = std::fs::File::create("../01_yarrp_scan/ipv4_0000.yarrp.rust")
+    //    .expect("Error while creating file to write...feels bad man");
+    //let writer = BufWriter::new(file);
+    //bincode::serialize_into(writer, &edge_map).expect("should have worked");
+    //serde_json::to_writer(writer, &edge_map).expect("should have worked");
 }
 
 fn parse_data_from_row(row: &String) -> YarrpRow {
