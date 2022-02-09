@@ -1,8 +1,8 @@
 extern crate core;
 
 use std::collections::HashMap;
-use std::fs::File;
 use std::io::BufWriter;
+use std::net::{Ipv4Addr, Ipv6Addr};
 use std::str::FromStr;
 
 #[derive(Debug)]
@@ -33,35 +33,80 @@ fn main() {
         .map(self::parse_data_from_row)
         .collect();
 
-    let mut edge_map = HashMap::<u32, Vec<(u32, u8)>>::new();
+    // yes i know this is extremely bad. i just want to see how well it works
+    let mut edge1_map = HashMap::<u32, Vec<(u32, u8)>>::new();
+    let mut edge2_map = HashMap::<u128, Vec<(u128, u8)>>::new();
     for node in nodes {
         match node {
             YarrpRow::V4(row) => {
-                if !edge_map.contains_key(&row.target_ip) {
+                if !edge1_map.contains_key(&row.target_ip) {
                     let new_list = Vec::<(u32, u8)>::new();
-                    edge_map.insert(row.target_ip, new_list);
+                    edge1_map.insert(row.target_ip, new_list);
                 }
-                let list = edge_map.get_mut(&row.target_ip).unwrap();
+                let list = edge1_map.get_mut(&row.target_ip).unwrap();
+                list.push((row.hop_ip, row.hop_count));
+            }
+            YarrpRow::V6(row) => {
+                if !edge2_map.contains_key(&row.target_ip) {
+                    let new_list = Vec::<(u128, u8)>::new();
+                    edge2_map.insert(row.target_ip, new_list);
+                }
+                let list = edge2_map.get_mut(&row.target_ip).unwrap();
                 list.push((row.hop_ip, row.hop_count));
             }
             _ => {
-                panic!("V6 not supported yet")
+                panic!("?!")
             }
         }
     }
 
-    //let file = std::fs::File::create("../01_yarrp_scan/ipv4_0000.yarrp.rust")
-    //    .expect("Error while creating file to write...feels bad man");
-    //let writer = BufWriter::new(file);
-    //bincode::serialize_into(writer, &edge_map).expect("should have worked");
-    //serde_json::to_writer(writer, &edge_map).expect("should have worked");
+    let file = std::fs::File::create("../01_yarrp_scan/ipv4_0000.yarrp.rust")
+       .expect("Error while creating file to write...feels bad man");
+    let writer = BufWriter::new(file);
+    bincode::serialize_into(writer, &edge1_map).expect("should have worked");
 }
 
 fn parse_data_from_row(row: &String) -> YarrpRow {
-    let split_row: Vec<&str> = row.split(" ").collect();
-    let raw_target_ip = split_row[0];
-    let raw_hop_ip = split_row[6];
-    let raw_hop_count = split_row[5];
+    // Why not split? It was 3 seconds slower on a 410 MB IPv4 test run
+    let ascii_row = row.as_bytes();
+    let last_index = ascii_row.len() - 1;
+    let mut target_ip_split = 0;
+    for i in 0..last_index {
+        if ascii_row[i] == 0x20 {
+            target_ip_split = i;
+            break;
+        }
+    }
+
+    let mut spaces_to_skip = 3;
+    let mut hop_count_split_start = 0;
+    let mut hop_count_split_end = 0;
+    let mut hop_ip_split_end = 0;
+    for i in (target_ip_split + 1)..last_index {
+        if ascii_row[i] == 0x20 {
+            if spaces_to_skip == 0 {
+                if hop_count_split_start == 0 {
+                    hop_count_split_start = i + 1;
+                } else if hop_count_split_end == 0 {
+                    hop_count_split_end = i;
+                } else {
+                    hop_ip_split_end = i;
+                    break;
+                }
+            } else {
+                spaces_to_skip -= 1;
+            }
+        }
+    }
+
+    let row = row.as_str();
+
+    // let mut split_row = row.split(" ").take(7);
+    let raw_target_ip = &row[0..target_ip_split]; //split_row.next().expect("error");
+
+    // let mut new_split_row = split_row.skip(4).take(2);
+    let raw_hop_count = &row[hop_count_split_start..hop_count_split_end];//new_split_row.next().expect("error");
+    let raw_hop_ip = &row[hop_count_split_end+1..hop_ip_split_end];//new_split_row.next().expect("error");
 
     let hop_count = u8::from_str(raw_hop_count).expect(&construct_error(row));
     if row.contains(".") {
@@ -85,46 +130,26 @@ fn construct_error(row: &str) -> String {
     format!("Could not parse data for row: {}", row)
 }
 
-fn construct_ip_segment_error(ip_str: &str, ip_segment: &str) -> String {
-    format!("Could not parse segment {} in ip {}", ip_segment, ip_str)
-}
-
 fn ipv4_str_to_numeric(ip_str: &str) -> u32 {
-    let split_ip: Vec<&str> = ip_str.split(".").collect();
-
-    let mut ip: u32 = 0;
-    for (i, segment) in split_ip.iter().enumerate() {
-        let parsed_segment = u32::from_str(*segment)
-            .expect(&construct_ip_segment_error(ip_str, segment));
-        ip += parsed_segment << ((3 - i) * 8)
-    }
-    u32::from(ip)
+    let parsed_ip: Ipv4Addr = ip_str.parse().unwrap();
+    let mut shift = 4;
+    return parsed_ip.octets()
+        .iter()
+        .fold(0, |ip, e| {
+            shift -= 1;
+            ip | u32::from(e << shift)
+        });
 }
 
 fn ipv6_str_to_numeric(ip_str: &str) -> u128 {
-    let mut split_ip: Vec<&str> = ip_str.split(":").collect();
-    if split_ip[0] == "" {
-        split_ip[0] = "0"
-    }
-    let last_index = split_ip.len() - 1;
-    if split_ip[last_index] == "" {
-        split_ip[last_index] = "0"
-    }
-    if split_ip.contains(&"") {
-        let i = split_ip.iter().position(|&s| s == "").unwrap();
-        split_ip[i] = "0";
-        let missing_zero_segments = 8 - last_index;
-        for _ in 1..missing_zero_segments {
-            split_ip.insert(i, "0")
-        }
-    }
-    let mut ip = 0;
-    for (i, segment) in split_ip.iter().enumerate() {
-        let parsed_segment = u128::from_str_radix(*segment, 16)
-            .expect(&construct_ip_segment_error(ip_str, segment));
-        ip += parsed_segment << ((7 - i) * (8 * 2)) // block 7 - i, 8 bits per byte, 2 bytes
-    }
-    u128::from(ip)
+    let parsed_ip: Ipv6Addr = ip_str.parse().unwrap();
+    let mut shift = 16;
+    return parsed_ip.octets()
+        .iter()
+        .fold(0, |ip, &e| {
+            shift -= 1;
+            ip | (u128::from(e) << shift)
+        });
 }
 
 fn read_all(file_name: &str) -> Vec<String> {
