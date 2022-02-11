@@ -1,11 +1,15 @@
-pub mod processor_util {
+pub mod parser {
     use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
+    use std::process::exit;
     use std::str::FromStr;
-    use log::warn;
-    use crate::yarrp_row::yarrp_row::{YarrpRowIpv4, YarrpRowIpv6};
-    use crate::YarrpRow;
 
-    pub fn parse_data_from_row(row: &String) -> Option<YarrpRow> {
+    use log::{error, warn};
+
+    use crate::Row;
+    use crate::structs::util::IpType;
+    use crate::structs::yarrp_row::{RowIpv4, RowIpv6};
+
+    pub fn parse_data_from_row(row: &String, expected_ip_type: &IpType) -> Option<Row> {
         let (raw_target_ip, raw_hop_count, raw_hop_ip) = extract_strings_from_row(row);
 
         let hop_count = hop_count_str_to_numeric(raw_hop_count);
@@ -30,16 +34,30 @@ pub mod processor_util {
         let ips = (target_ip, hop_ip);
 
         match ips {
-            (IpAddr::V4(target), IpAddr::V4(hop)) => Some(YarrpRow::V4(YarrpRowIpv4 {
-                target_ip: ipv4_to_numeric(target),
-                hop_ip: ipv4_to_numeric(hop),
-                hop_count,
-            })),
-            (IpAddr::V6(target), IpAddr::V6(hop)) => Some(YarrpRow::V6(YarrpRowIpv6 {
-                target_ip: ipv6_to_numeric(target),
-                hop_ip: ipv6_to_numeric(hop),
-                hop_count,
-            })),
+            (IpAddr::V4(target), IpAddr::V4(hop)) => {
+                if expected_ip_type == &IpType::V6 {
+                    error!("Expected IPV6 addresses only but got IPV4 addresses: target ip {} hop ip {}", target, hop);
+                    exit(1);
+                }
+
+                Some(Row::V4(RowIpv4 {
+                    target_ip: ipv4_to_numeric(target),
+                    hop_ip: ipv4_to_numeric(hop),
+                    hop_count,
+                }))
+            },
+            (IpAddr::V6(target), IpAddr::V6(hop)) => {
+                if expected_ip_type == &IpType::V4 {
+                    error!("Expected IPV4 addresses only but got IPV6 addresses: target ip {} hop ip {}", target, hop);
+                    exit(1);
+                }
+
+                Some(Row::V6(RowIpv6 {
+                    target_ip: ipv6_to_numeric(target),
+                    hop_ip: ipv6_to_numeric(hop),
+                    hop_count,
+                }))
+            },
             _ => {
                 warn!("SKIPPING ROW: IP type mismatch: Encountered a route with IPs of 2 \
                 different/unknown types: target ip {} hop ip {}", raw_target_ip, raw_hop_ip);
