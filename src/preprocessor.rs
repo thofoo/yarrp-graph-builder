@@ -1,18 +1,14 @@
 pub mod preprocessor {
-    use std::collections::HashMap;
-    use std::ffi::OsStr;
     use std::fs;
     use std::fs::DirEntry;
-    use std::hash::Hash;
     use std::io::BufWriter;
     use std::path::PathBuf;
-    use std::process::exit;
 
-    use log::{error, info, trace};
+    use log::{info, trace};
     use pbr::ProgressBar;
-    use serde::Serialize;
 
-    use crate::{IpType, preprocessor_util, Row, RowIpv4, RowIpv6};
+    use crate::{preprocessor_util};
+    use crate::bucket::bucket::GraphBucket;
     use crate::parameters::parameters::GraphBuilderParameters;
 
     pub struct Preprocessor {
@@ -40,32 +36,29 @@ pub mod preprocessor {
             let file_count = files_to_process.len() as u64;
             let mut progress_bar = ProgressBar::new(file_count);
 
-            info!("Processing {} files.", file_count);
+            info!("Processing {} files...", file_count);
             progress_bar.set(0);
+            let mut memory = GraphBucket::new();
             for file in files_to_process {
-                self.preprocess_single_file(file.path());
+                self.preprocess_single_file(file.path(), &mut memory);
                 progress_bar.inc();
             }
 
+            info!("Writing results to file...");
+            self.write_to_file(&memory);
             info!("Processing of {} files completed.", file_count);
         }
 
-        fn preprocess_single_file(&self, input_path: PathBuf) {
+        fn preprocess_single_file(&self, input_path: PathBuf, memory: &mut GraphBucket) {
             trace!("Reading in input file...");
             let raw_rows = self.read_lines(&input_path);
             trace!("Parsing row data...");
             let address_type = self.config.address_type();
-            let entries: Vec<Row> = raw_rows.iter()
-                .map(|row| preprocessor_util::parser::parse_data_from_row(row, address_type))
-                .filter_map(|row| row)
-                .collect();
+            raw_rows.iter().for_each(|row|
+                preprocessor_util::parser::parse_data_from_row(row, memory, address_type)
+            );
 
-            trace!("Processing parsed entries...");
-            let file_name = &input_path.file_name().unwrap();
-            match address_type {
-                IpType::V4 => self.process_entries_as_ipv4(entries, file_name),
-                IpType::V6 => self.process_entries_as_ipv6(entries, file_name),
-            }
+
         }
 
         fn read_lines(&self, path: &PathBuf) -> Vec<String> {
@@ -77,58 +70,12 @@ pub mod preprocessor {
                 .collect()
         }
 
-        fn process_entries_as_ipv4(&self, entries: Vec<Row>, file_name: &OsStr) {
-            let mut edge_map = HashMap::<u32, Vec<(u32, u8)>>::new();
-            for entry in entries {
-                match entry {
-                    Row::V4(row) => self.process_ipv4_entry(row, &mut edge_map),
-                    Row::V6(_) => {
-                        error!("Received an IPv6 address in the IPV4 row processing stage, this should be impossible");
-                        exit(1);
-                    },
-                }
-            }
-            self.write_to_file(&edge_map, file_name);
-        }
-
-        fn process_entries_as_ipv6(&self, entries: Vec<Row>, file_name: &OsStr) {
-            let mut edge_map = HashMap::<u128, Vec<(u128, u8)>>::new();
-            for entry in entries {
-                match entry {
-                    Row::V4(_) => {
-                        error!("Received an IPv4 address in the IPV6 row processing stage, this should be impossible");
-                        exit(1);
-                    },
-                    Row::V6(row) => self.process_ipv6_entry(row, &mut edge_map),
-                }
-            }
-            self.write_to_file(&edge_map, file_name);
-        }
-
-        fn process_ipv4_entry(&self, row: RowIpv4, edge_map: &mut HashMap<u32, Vec<(u32, u8)>>) {
-            if !edge_map.contains_key(&row.target_ip) {
-                let new_list = Vec::<(u32, u8)>::new();
-                edge_map.insert(row.target_ip, new_list);
-            }
-            let list = edge_map.get_mut(&row.target_ip).unwrap();
-            list.push((row.hop_ip, row.hop_count));
-        }
-
-        fn process_ipv6_entry(&self, row: RowIpv6, edge_map: &mut HashMap<u128, Vec<(u128, u8)>>) {
-            if !edge_map.contains_key(&row.target_ip) {
-                let new_list = Vec::<(u128, u8)>::new();
-                edge_map.insert(row.target_ip, new_list);
-            }
-            let list = edge_map.get_mut(&row.target_ip).unwrap();
-            list.push((row.hop_ip, row.hop_count));
-        }
-
-        fn write_to_file<T1: Hash + Eq + Serialize, T2: Serialize>(&self, edge_map: &HashMap<T1, Vec<(T1, T2)>>, file_name: &OsStr) {
+        fn write_to_file(&self, graph: &GraphBucket) {
             trace!("Writing result to disk...");
-            let file = std::fs::File::create(self.config.intermediary_file_path().join(file_name))
+            let file = std::fs::File::create(self.config.intermediary_file_path().join("yarrp-graph.raw"))
                 .expect("Error while creating file to write...feels bad man");
             let writer = BufWriter::new(file);
-            bincode::serialize_into(writer, edge_map).expect("should have worked");
+            bincode::serialize_into(writer, graph).expect("should have worked");
             trace!("Result written to disk.");
         }
     }

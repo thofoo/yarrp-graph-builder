@@ -5,11 +5,11 @@ pub mod parser {
 
     use log::{error, warn};
 
-    use crate::Row;
+    use crate::bucket::bucket::GraphBucket;
     use crate::structs::util::IpType;
-    use crate::structs::yarrp_row::{RowIpv4, RowIpv6};
+    use crate::structs::yarrp_row::{NodeV4, NodeV6};
 
-    pub fn parse_data_from_row(row: &String, expected_ip_type: &IpType) -> Option<Row> {
+    pub fn parse_data_from_row(row: &String, memory: &mut GraphBucket, expected_ip_type: &IpType) {
         let (raw_target_ip, raw_hop_count, raw_hop_ip) = extract_strings_from_row(row);
 
         let hop_count = hop_count_str_to_numeric(raw_hop_count);
@@ -21,14 +21,14 @@ pub mod parser {
             target_ip = address;
         } else {
             warn!("SKIPPING ROW: Could not parse target IP: {}", raw_target_ip);
-            return None
+            return
         }
 
         if let Ok(address) = IpAddr::from_str(raw_hop_ip) {
             hop_ip = address;
         } else {
             warn!("SKIPPING ROW: Could not parse hop IP: {}", raw_hop_ip);
-            return None
+            return
         }
 
         let ips = (target_ip, hop_ip);
@@ -40,11 +40,11 @@ pub mod parser {
                     exit(1);
                 }
 
-                Some(Row::V4(RowIpv4 {
+                let _ = &memory.add_node_v4(NodeV4 {
                     target_ip: ipv4_to_numeric(target),
                     hop_ip: ipv4_to_numeric(hop),
                     hop_count,
-                }))
+                });
             },
             (IpAddr::V6(target), IpAddr::V6(hop)) => {
                 if expected_ip_type == &IpType::V4 {
@@ -52,16 +52,15 @@ pub mod parser {
                     exit(1);
                 }
 
-                Some(Row::V6(RowIpv6 {
+                let _ = &memory.add_node_v6(NodeV6 {
                     target_ip: ipv6_to_numeric(target),
                     hop_ip: ipv6_to_numeric(hop),
                     hop_count,
-                }))
+                });
             },
             _ => {
                 warn!("SKIPPING ROW: IP type mismatch: Encountered a route with IPs of 2 \
                 different/unknown types: target ip {} hop ip {}", raw_target_ip, raw_hop_ip);
-                None
             }
         }
     }
