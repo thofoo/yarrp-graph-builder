@@ -5,11 +5,11 @@ pub mod parser {
 
     use log::{error, warn};
 
-    use crate::bucket::bucket::GraphBucket;
+    use crate::bucket_manager::bucket_manager::GraphBucketManager;
     use crate::structs::util::IpType;
     use crate::structs::yarrp_row::{NodeV4, NodeV6};
 
-    pub fn parse_data_from_row(row: &String, memory: &mut GraphBucket, expected_ip_type: &IpType) {
+    pub fn parse_data_from_row(row: &String, memory: &mut GraphBucketManager, expected_ip_type: &IpType) {
         let (raw_target_ip, raw_hop_count, raw_hop_ip) = extract_strings_from_row(row);
 
         let hop_count = hop_count_str_to_numeric(raw_hop_count);

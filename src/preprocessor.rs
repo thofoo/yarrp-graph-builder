@@ -1,14 +1,13 @@
 pub mod preprocessor {
     use std::fs;
     use std::fs::DirEntry;
-    use std::io::BufWriter;
     use std::path::PathBuf;
 
     use log::{info, trace};
     use pbr::ProgressBar;
 
     use crate::{preprocessor_util};
-    use crate::bucket::bucket::GraphBucket;
+    use crate::bucket_manager::bucket_manager::GraphBucketManager;
     use crate::parameters::parameters::GraphBuilderParameters;
 
     pub struct Preprocessor {
@@ -38,18 +37,19 @@ pub mod preprocessor {
 
             info!("Processing {} files...", file_count);
             progress_bar.set(0);
-            let mut memory = GraphBucket::new();
+            let mut memory = GraphBucketManager::new(
+                self.config.intermediary_file_path().to_path_buf()
+            );
             for file in files_to_process {
                 self.preprocess_single_file(file.path(), &mut memory);
                 progress_bar.inc();
             }
+            memory.evict_all();
 
-            info!("Writing results to file...");
-            self.write_to_file(&memory);
             info!("Processing of {} files completed.", file_count);
         }
 
-        fn preprocess_single_file(&self, input_path: PathBuf, memory: &mut GraphBucket) {
+        fn preprocess_single_file(&self, input_path: PathBuf, memory: &mut GraphBucketManager) {
             trace!("Reading in input file...");
             let raw_rows = self.read_lines(&input_path);
             trace!("Parsing row data...");
@@ -68,15 +68,6 @@ pub mod preprocessor {
                 .filter(|&s| !s.starts_with("#"))
                 .map(str::to_string)
                 .collect()
-        }
-
-        fn write_to_file(&self, graph: &GraphBucket) {
-            trace!("Writing result to disk...");
-            let file = std::fs::File::create(self.config.intermediary_file_path().join("yarrp-graph.raw"))
-                .expect("Error while creating file to write...feels bad man");
-            let writer = BufWriter::new(file);
-            bincode::serialize_into(writer, graph).expect("should have worked");
-            trace!("Result written to disk.");
         }
     }
 }
