@@ -7,16 +7,18 @@ pub mod merger {
     use log::info;
     use pbr::ProgressBar;
 
-    use crate::parameters;
+    use crate::{GraphBuilderParameters, parameters};
 
     pub struct Merger {
         intermediary_file_path: PathBuf,
+        output_file_path: PathBuf,
     }
 
     impl Merger {
-        pub fn new(intermediary_file_path: PathBuf) -> Merger {
+        pub fn new(config: &GraphBuilderParameters) -> Merger {
             Merger {
-                intermediary_file_path,
+                intermediary_file_path: config.intermediary_file_path().to_path_buf(),
+                output_file_path: config.output_path().to_path_buf(),
             }
         }
 
@@ -42,11 +44,10 @@ pub mod merger {
             let mut progress_bar = ProgressBar::new(file_count);
 
             info!("Processing {} intermediary files to the final format...", file_count);
-            /* progress_bar.set(0);
+
+            progress_bar.set(0);
 
             for file in files_to_process {
-                let bucket = GraphBucket::new(file.path());
-
                 progress_bar.inc();
             }
 
@@ -54,8 +55,6 @@ pub mod merger {
             // untangle
             // write untangled edges into edge file AND INTO EDGE CACHE
             // write nodes into
-
-             */
         }
     }
 }

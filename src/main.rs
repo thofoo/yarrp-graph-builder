@@ -40,12 +40,9 @@ fn main() {
     info!("Intermediary file path: {}", &config.intermediary_file_path().to_str().unwrap());
     info!("Output path: {}", &config.output_path().to_str().unwrap());
 
-    let merger = Merger::new(
-        config.intermediary_file_path().to_path_buf(),
-    );
-
-    let preprocessor = Preprocessor::new(config);
+    let preprocessor = Preprocessor::new(&config);
     preprocessor.preprocess_files();
 
+    let merger = Merger::new(&config);
     merger.merge_data();
 }

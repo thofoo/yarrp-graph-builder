@@ -6,17 +6,23 @@ pub mod preprocessor {
     use log::{info, trace};
     use pbr::ProgressBar;
 
-    use crate::parser;
+    use crate::{IpType, parser};
     use crate::bucket_manager::bucket_manager::GraphBucketManager;
     use crate::parameters::parameters::GraphBuilderParameters;
 
     pub struct Preprocessor {
-        config: GraphBuilderParameters,
+        address_type: IpType,
+        input_path: PathBuf,
+        intermediary_file_path: PathBuf,
     }
 
     impl Preprocessor {
-        pub fn new(config: GraphBuilderParameters) -> Preprocessor {
-            Preprocessor { config }
+        pub fn new(config: &GraphBuilderParameters) -> Preprocessor {
+            Preprocessor {
+                address_type: (*config.address_type()).into(),
+                input_path: config.input_path().to_path_buf(),
+                intermediary_file_path: config.intermediary_file_path().to_path_buf(),
+            }
         }
 
         pub fn preprocess_files(self) {
