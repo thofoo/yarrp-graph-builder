@@ -19,4 +19,10 @@ pub mod yarrp_row {
         pub hop_ip: u128,
         pub hop_count: u8,
     }
+
+    pub struct InternalNode {
+        pub target_id: u32,
+        pub hop_id: u32,
+        pub hop_count: u8,
+    }
 }

@@ -7,6 +7,9 @@ pub mod parameters {
 
     use crate::IpType;
 
+    const NODE_INDEX_PATH: &str = "index";
+    pub const NODE_INDEX_PATH_SUFFIX: &str = "index/yarrp.node_index.bin";
+
     pub struct GraphBuilderParameters {
         address_type: IpType,
         input_path: PathBuf,
@@ -40,7 +43,8 @@ pub mod parameters {
                 exit(1);
             }
 
-            fs::create_dir_all(&intermediary_file_path).expect("Could not create intermediary file path");
+            fs::create_dir_all(&intermediary_file_path).expect("Could not create intermediary file paths");
+            fs::create_dir_all(&intermediary_file_path.join(NODE_INDEX_PATH)).expect("Could not create intermediary file paths");
 
             GraphBuilderParameters {
                 address_type,

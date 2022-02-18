@@ -108,7 +108,7 @@ pub mod parser {
         (raw_target_ip, raw_hop_count, raw_hop_ip)
     }
 
-    pub fn hop_count_str_to_numeric(hop_count_str: &str) -> u8 {
+    fn hop_count_str_to_numeric(hop_count_str: &str) -> u8 {
         u8::from_str(&hop_count_str).expect(&construct_error("hop count", hop_count_str))
     }
 

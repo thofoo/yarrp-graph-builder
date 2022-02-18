@@ -6,7 +6,7 @@ pub mod preprocessor {
     use log::{info, trace};
     use pbr::ProgressBar;
 
-    use crate::{preprocessor_util};
+    use crate::parser;
     use crate::bucket_manager::bucket_manager::GraphBucketManager;
     use crate::parameters::parameters::GraphBuilderParameters;
 
@@ -20,12 +20,6 @@ pub mod preprocessor {
         }
 
         pub fn preprocess_files(self) {
-            info!("Expecting to read IP{:?} addresses.", self.config.address_type());
-
-            info!("Input path: {}", self.config.input_path().to_str().unwrap());
-            info!("Intermediary file path: {}", self.config.intermediary_file_path().to_str().unwrap());
-            info!("Output path: {}", self.config.output_path().to_str().unwrap());
-
             let raw_files_list = fs::read_dir(self.config.input_path()).unwrap();
             let files_to_process: Vec<DirEntry> = raw_files_list
                 .map(|entry| entry.unwrap())
@@ -44,7 +38,7 @@ pub mod preprocessor {
                 self.preprocess_single_file(file.path(), &mut memory);
                 progress_bar.inc();
             }
-            memory.evict_all();
+            memory.store_all_to_disk();
 
             info!("Processing of {} files completed.", file_count);
         }
@@ -55,10 +49,8 @@ pub mod preprocessor {
             trace!("Parsing row data...");
             let address_type = self.config.address_type();
             raw_rows.iter().for_each(|row|
-                preprocessor_util::parser::parse_data_from_row(row, memory, address_type)
+                parser::parser::parse_data_from_row(row, memory, address_type)
             );
-
-
         }
 
         fn read_lines(&self, path: &PathBuf) -> Vec<String> {
