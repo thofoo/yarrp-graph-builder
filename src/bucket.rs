@@ -63,6 +63,7 @@ pub mod bucket {
             let path = &self.file_path;
             util::util::write_to_file(path, &self.edge_map);
             self.edge_map.clear();
+            self.edge_map.shrink_to_fit(); // rust keeps allocated memory around otherwise
             self.is_in_memory = false;
         }
 

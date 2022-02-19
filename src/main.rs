@@ -32,9 +32,10 @@ fn main() {
         IpType::V6,
         "../01_yarrp_scan/input/v6",
         "../01_yarrp_scan/output/v6",
-        /* buckets_in_memory_limit: */ 128,
+        /* buckets_in_memory_limit: */ 256,
+        /* memory_limit_mib: */ 6144,
         /* should_preprocess: */ true,
-        /* should_merge: */ true,
+        /* should_merge: */ false,
         /* should_persist_index: */ true,
         /* should_persist_edges: */ true,
     );

@@ -2,12 +2,12 @@ pub mod bucket_manager {
     use std::collections::{HashMap, VecDeque};
     use std::path::{Path, PathBuf};
 
-    use log::debug;
+    use log::info;
 
-    use crate::bucket::bucket::GraphBucket;
-    use crate::structs::yarrp_row::{InternalNode, NodeV4, NodeV6};
     use crate::{GraphBuilderParameters, util};
+    use crate::bucket::bucket::GraphBucket;
     use crate::parameters;
+    use crate::structs::yarrp_row::{InternalNode, NodeV4, NodeV6};
 
     pub struct GraphBucketManager {
         buckets: HashMap<u8, GraphBucket>,
@@ -126,12 +126,28 @@ pub mod bucket_manager {
         }
 
         fn evict_if_overbooked(&mut self) {
-            let len = self.in_memory.len();
-            if len > self.config.buckets_in_memory_limit() {
+            let mut bucket_count = self.in_memory.len();
+            while self.is_above_memory_limit() && bucket_count > 1 {
                 let bucket_to_evict = self.in_memory.pop_front().unwrap();
-                debug!("evicting {} because queue reached len {}", &bucket_to_evict, len);
+                bucket_count = self.in_memory.len();
+                info!(
+                    "evicting {} because memory usage is above {} MB (remaining buckets: {})",
+                    &bucket_to_evict,
+                    self.config.memory_limit_mib(),
+                    bucket_count,
+                );
                 self.buckets.get_mut(&bucket_to_evict).unwrap().evict_to_disk();
             }
+        }
+
+        fn is_above_memory_limit(&self) -> bool {
+            let statm = procinfo::pid::statm_self().unwrap();
+            let page_size = 4096;
+            let used_memory = statm.resident * page_size;
+
+            let mem_limit_in_bytes = self.config.memory_limit_mib() * 1024 * 1024;
+
+            used_memory > mem_limit_in_bytes
         }
 
         pub fn store_all_to_disk(self) {
