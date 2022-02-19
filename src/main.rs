@@ -26,12 +26,16 @@ fn main() {
     env_builder.init();
 
     info!("Let's go!");
-    // TODO get from cmd line args
 
+    // TODO get from cmd line args
     let config = GraphBuilderParameters::new(
         IpType::V4,
         "../01_yarrp_scan/input/v4",
         "../01_yarrp_scan/output/v4",
+        /* should_preprocess: */ true,
+        /* should_merge: */ true,
+        /* should_persist_index: */ true,
+        /* should_persist_edges: */ true,
     );
 
     info!("Expecting to read IP{:?} addresses.", &config.address_type());

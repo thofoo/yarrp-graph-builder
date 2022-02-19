@@ -65,5 +65,9 @@ pub mod bucket {
             self.edge_map.clear();
             self.is_in_memory = false;
         }
+
+        pub fn edge_map(self) -> HashMap<u32, Vec<(u32, u8)>> {
+            self.edge_map
+        }
     }
 }

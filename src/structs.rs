@@ -1,6 +1,7 @@
 pub mod util {
     #[derive(PartialEq)]
     #[derive(Debug)]
+    #[derive(Clone)]
     pub enum IpType {
         V4,
         V6,

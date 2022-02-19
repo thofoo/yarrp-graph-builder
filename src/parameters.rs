@@ -10,15 +10,28 @@ pub mod parameters {
     const NODE_INDEX_PATH: &str = "index";
     pub const NODE_INDEX_PATH_SUFFIX: &str = "index/yarrp.node_index.bin";
 
+    #[derive(Clone)]
     pub struct GraphBuilderParameters {
         address_type: IpType,
         input_path: PathBuf,
         intermediary_file_path: PathBuf,
         output_path: PathBuf,
+        should_preprocess: bool,
+        should_merge: bool,
+        should_persist_index: bool,
+        should_persist_edges: bool,
     }
 
     impl GraphBuilderParameters {
-        pub fn new(address_type: IpType, input_folder: &str, output_folder: &str) -> GraphBuilderParameters {
+        pub fn new(
+            address_type: IpType,
+            input_folder: &str,
+            output_folder: &str,
+            should_preprocess: bool,
+            should_merge: bool,
+            should_persist_index: bool,
+            should_persist_edges: bool,
+        ) -> GraphBuilderParameters {
             let input_path = Path::new(input_folder).to_path_buf();
             let intermediary_file_path = input_path.join(Path::new("intermediate"));
             let output_path = Path::new(output_folder).to_path_buf();
@@ -51,6 +64,10 @@ pub mod parameters {
                 input_path,
                 intermediary_file_path,
                 output_path,
+                should_preprocess,
+                should_merge,
+                should_persist_index,
+                should_persist_edges,
             }
         }
 
@@ -65,6 +82,19 @@ pub mod parameters {
         }
         pub fn output_path(&self) -> &PathBuf {
             &self.output_path
+        }
+
+        pub fn should_preprocess(&self) -> bool {
+            self.should_preprocess
+        }
+        pub fn should_merge(&self) -> bool {
+            self.should_merge
+        }
+        pub fn should_persist_index(&self) -> bool {
+            self.should_persist_index
+        }
+        pub fn should_persist_edges(&self) -> bool {
+            self.should_persist_edges
         }
     }
 }

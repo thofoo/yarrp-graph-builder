@@ -2,36 +2,72 @@ pub mod merger {
     use std::collections::HashMap;
     use std::fs;
     use std::fs::{DirEntry, File};
+    use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
     use std::path::{Path, PathBuf};
+    use csv::Writer;
 
     use log::info;
     use pbr::ProgressBar;
 
-    use crate::{GraphBuilderParameters, parameters};
+    use crate::{GraphBuilderParameters, IpType, parameters};
+    use crate::bucket::bucket::GraphBucket;
 
     pub struct Merger {
-        intermediary_file_path: PathBuf,
-        output_file_path: PathBuf,
+        config: GraphBuilderParameters,
     }
 
     impl Merger {
         pub fn new(config: &GraphBuilderParameters) -> Merger {
-            Merger {
-                intermediary_file_path: config.intermediary_file_path().to_path_buf(),
-                output_file_path: config.output_path().to_path_buf(),
-            }
+            Merger { config: config.clone() }
         }
 
         pub fn merge_data(self) {
-            let raw_files_list = fs::read_dir(&self.intermediary_file_path).unwrap();
+            if !self.config.should_merge() {
+                info!("Merging flag is FALSE - skipping merging.");
+                return;
+            }
+
+            info!("Beginning with the merging of the intermediate results.");
+            info!("Creating empty output files...");
+
+            let index_path = self.config.intermediary_file_path().join(
+                Path::new(parameters::parameters::NODE_INDEX_PATH_SUFFIX)
+            );
+
+            let node_mapping_output_path = self.config.output_path().join(
+                Path::new("mapping.csv")
+            );
+            let edge_output_path = self.config.output_path().join(
+                Path::new("edges.csv")
+            );
+
+            let mut index_writer = csv::Writer::from_path(&node_mapping_output_path)
+                .expect(&format!(
+                    "Could not create file for storing node mapping at {}", node_mapping_output_path.to_str().unwrap()
+                ));
+            let mut edge_writer = csv::Writer::from_path(&edge_output_path)
+                .expect(&format!(
+                    "Could not create file for storing edges at {}", edge_output_path.to_str().unwrap()
+                ));
+
+            let raw_files_list = fs::read_dir(&self.config.intermediary_file_path()).unwrap();
             let files_to_process: Vec<DirEntry> = raw_files_list
                 .map(|entry| entry.unwrap())
                 .filter(|i| i.path().is_file())
                 .collect();
 
-            let index_path = self.intermediary_file_path.join(
-                Path::new(parameters::parameters::NODE_INDEX_PATH_SUFFIX)
-            );
+            info!("Reading in intermediate files...");
+
+            self.write_node_mapping(index_path, &mut index_writer);
+            self.write_edge_mapping(files_to_process, &mut edge_writer);
+        }
+
+        fn write_node_mapping(&self, index_path: PathBuf, index_writer: &mut Writer<File>) {
+            if !self.config.should_persist_index() {
+                info!("Index persistence flag is FALSE - skipping index persistence.");
+                return;
+            }
+
             let index_file = File::open(&index_path).expect(&format!(
                 "File at {} does not exist", index_path.to_str().unwrap()
             ));
@@ -40,21 +76,67 @@ pub mod merger {
                 index_path.to_str().unwrap()
             ));
 
-            let file_count = files_to_process.len() as u64;
-            let mut progress_bar = ProgressBar::new(file_count);
+            info!("Writing node mapping to disk...");
 
+            index_writer.serialize(("ip", "node_id")).unwrap();
+
+            index.iter()
+                .map(|(&ip, &node_id)| {
+                    let ip_addr = if self.config.address_type() == &IpType::V4 {
+                        IpAddr::V4(Ipv4Addr::from(u32::try_from(ip & 0xffffffff).unwrap()))
+                    } else {
+                        IpAddr::V6(Ipv6Addr::from(ip))
+                    };
+                    (ip_addr, node_id)
+                })
+                .for_each(|row| index_writer.serialize(row).unwrap());
+
+            index_writer.flush().unwrap();
+        }
+
+        fn write_edge_mapping(&self, files_to_process: Vec<DirEntry>, edge_writer: &mut Writer<File>) {
+            if !self.config.should_persist_edges() {
+                info!("Edge persistence flag is FALSE - skipping edge persistence.");
+                return;
+            }
+
+            let file_count = files_to_process.len() as u64;
             info!("Processing {} intermediary files to the final format...", file_count);
 
+            let mut progress_bar = ProgressBar::new(file_count);
             progress_bar.set(0);
 
+            edge_writer.serialize(("from", "to")).unwrap();
+
+            let mut missing_node_counter = -2;
             for file in files_to_process {
+                let edge_map = GraphBucket::new(file.path()).edge_map();
+                for (_, mut edges) in edge_map {
+                    edges.sort_by_key(|&i| i.1);
+
+                    let mut previous_node: i64 = -1; // -1 == source IP TODO make this clearer or maybe even migrate 0
+                    let mut previous_hop = 0;
+                    for (current_node, current_hop) in edges {
+                        if current_hop > previous_hop + 1 {
+                            let missing_hops = (current_hop - 1) - (previous_hop + 1);
+                            for _ in 1..=missing_hops {
+                                edge_writer.serialize((previous_node, missing_node_counter)).unwrap();
+                                previous_node = i64::try_from(missing_node_counter).unwrap();
+                                previous_hop += 1;
+
+                                missing_node_counter -= 1;
+                            }
+                        }
+
+                        edge_writer.serialize((previous_node, current_node)).unwrap();
+                        previous_node = i64::try_from(current_node).unwrap();
+                        previous_hop = current_hop;
+                    }
+                }
                 progress_bar.inc();
             }
 
-            // read in one file
-            // untangle
-            // write untangled edges into edge file AND INTO EDGE CACHE
-            // write nodes into
+            edge_writer.flush().unwrap();
         }
     }
 }
