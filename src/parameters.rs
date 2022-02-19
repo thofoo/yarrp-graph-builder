@@ -16,6 +16,7 @@ pub mod parameters {
         input_path: PathBuf,
         intermediary_file_path: PathBuf,
         output_path: PathBuf,
+        buckets_in_memory_limit: usize,
         should_preprocess: bool,
         should_merge: bool,
         should_persist_index: bool,
@@ -27,6 +28,7 @@ pub mod parameters {
             address_type: IpType,
             input_folder: &str,
             output_folder: &str,
+            buckets_in_memory_limit: usize,
             should_preprocess: bool,
             should_merge: bool,
             should_persist_index: bool,
@@ -64,6 +66,7 @@ pub mod parameters {
                 input_path,
                 intermediary_file_path,
                 output_path,
+                buckets_in_memory_limit,
                 should_preprocess,
                 should_merge,
                 should_persist_index,
@@ -84,6 +87,9 @@ pub mod parameters {
             &self.output_path
         }
 
+        pub fn buckets_in_memory_limit(&self) -> usize {
+            self.buckets_in_memory_limit
+        }
         pub fn should_preprocess(&self) -> bool {
             self.should_preprocess
         }

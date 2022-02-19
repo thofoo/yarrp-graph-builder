@@ -2,11 +2,11 @@ pub mod bucket_manager {
     use std::collections::{HashMap, VecDeque};
     use std::path::{Path, PathBuf};
 
-    use log::info;
+    use log::debug;
 
     use crate::bucket::bucket::GraphBucket;
     use crate::structs::yarrp_row::{InternalNode, NodeV4, NodeV6};
-    use crate::util;
+    use crate::{GraphBuilderParameters, util};
     use crate::parameters;
 
     pub struct GraphBucketManager {
@@ -14,17 +14,17 @@ pub mod bucket_manager {
         global_ip_mapping: HashMap<u128, u32>,
         id_counter: u32,
         in_memory: VecDeque<u8>,
-        intermediary_folder_path: PathBuf,
+        config: GraphBuilderParameters,
     }
 
     impl GraphBucketManager {
-        pub fn new(intermediary_folder_path: PathBuf) -> GraphBucketManager {
+        pub fn new(config: &GraphBuilderParameters) -> GraphBucketManager {
             GraphBucketManager {
                 buckets: HashMap::new(),
                 global_ip_mapping: HashMap::new(),
                 id_counter: 0,
                 in_memory: VecDeque::new(),
-                intermediary_folder_path,
+                config: config.clone(),
             }
         }
 
@@ -85,7 +85,7 @@ pub mod bucket_manager {
         }
 
         fn create_path_for_bucket_id(&self, bucket_id: u8) -> PathBuf {
-            self.intermediary_folder_path.join(format!("yarrp.{}.bin", bucket_id))
+            self.config.intermediary_file_path().join(format!("yarrp.{}.bin", bucket_id))
         }
 
         fn calculate_bucket_id_v4(&mut self, ip: u32) -> u8 {
@@ -127,15 +127,15 @@ pub mod bucket_manager {
 
         fn evict_if_overbooked(&mut self) {
             let len = self.in_memory.len();
-            if len > 256 {
+            if len > self.config.buckets_in_memory_limit() {
                 let bucket_to_evict = self.in_memory.pop_front().unwrap();
-                info!("evicting {} because queue reached len {}", &bucket_to_evict, len);
+                debug!("evicting {} because queue reached len {}", &bucket_to_evict, len);
                 self.buckets.get_mut(&bucket_to_evict).unwrap().evict_to_disk();
             }
         }
 
         pub fn store_all_to_disk(self) {
-            let node_index_path = self.intermediary_folder_path.join(
+            let node_index_path = self.config.intermediary_file_path().join(
                 Path::new(parameters::parameters::NODE_INDEX_PATH_SUFFIX)
             );
             util::util::write_to_file(&node_index_path, &self.global_ip_mapping);

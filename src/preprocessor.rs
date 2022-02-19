@@ -38,9 +38,7 @@ pub mod preprocessor {
 
             info!("Processing {} files...", file_count);
             progress_bar.set(0);
-            let mut memory = GraphBucketManager::new(
-                self.config.intermediary_file_path().to_path_buf()
-            );
+            let mut memory = GraphBucketManager::new(&self.config);
             for file in files_to_process {
                 self.preprocess_single_file(file.path(), &mut memory);
                 progress_bar.inc();
