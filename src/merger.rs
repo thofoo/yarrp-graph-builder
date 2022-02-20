@@ -108,7 +108,7 @@ pub mod merger {
 
             edge_writer.serialize(("from", "to")).unwrap();
 
-            let mut missing_node_counter = -2;
+            let mut missing_node_counter = -1;
             for file in files_to_process {
                 let edge_map = GraphBucket::new(file.path()).edge_map();
                 for (_, mut edges) in edge_map {
