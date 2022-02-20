@@ -114,7 +114,7 @@ pub mod merger {
                 for (_, mut edges) in edge_map {
                     edges.sort_by_key(|&i| i.1);
 
-                    let mut previous_node: i64 = -1; // -1 == source IP TODO make this clearer or maybe even migrate 0
+                    let mut previous_node: i64 = 0; // 0 == source IP
                     let mut previous_hop = 0;
                     for (current_node, current_hop) in edges {
                         if current_hop > previous_hop + 1 {

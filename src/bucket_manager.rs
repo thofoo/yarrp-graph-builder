@@ -1,19 +1,16 @@
 pub mod bucket_manager {
-    use std::collections::{HashMap, VecDeque};
+    use std::collections::HashMap;
     use std::path::{Path, PathBuf};
 
-    use log::info;
-
-    use crate::{GraphBuilderParameters, util};
     use crate::bucket::bucket::GraphBucket;
-    use crate::parameters;
     use crate::structs::yarrp_row::{InternalNode, NodeV4, NodeV6};
+    use crate::{GraphBuilderParameters, util};
+    use crate::parameters;
 
     pub struct GraphBucketManager {
         buckets: HashMap<u8, GraphBucket>,
         global_ip_mapping: HashMap<u128, u32>,
         id_counter: u32,
-        in_memory: VecDeque<u8>,
         config: GraphBuilderParameters,
     }
 
@@ -22,8 +19,7 @@ pub mod bucket_manager {
             GraphBucketManager {
                 buckets: HashMap::new(),
                 global_ip_mapping: HashMap::new(),
-                id_counter: 0,
-                in_memory: VecDeque::new(),
+                id_counter: 1, // 0 is reserved for the source IP
                 config: config.clone(),
             }
         }
@@ -31,7 +27,6 @@ pub mod bucket_manager {
         pub fn add_node_v4(&mut self, node: NodeV4) {
             let bucket_id = self.calculate_bucket_id_v4(node.target_ip);
             let internal_node = self.convert_to_internal_node_v4(&node);
-            self.evict_if_overbooked();
 
             let bucket = self.fetch_bucket(bucket_id);
             bucket.add_node(internal_node);
@@ -78,7 +73,6 @@ pub mod bucket_manager {
         pub fn add_node_v6(&mut self, node: NodeV6) {
             let bucket_id = self.calculate_bucket_id_v6(node.target_ip);
             let internal_node = self.convert_to_internal_node_v6(&node);
-            self.evict_if_overbooked();
 
             let bucket = self.fetch_bucket(bucket_id);
             bucket.add_node(internal_node);
@@ -119,35 +113,7 @@ pub mod bucket_manager {
                 self.buckets.get_mut(&bucket_id).unwrap()
             };
 
-            self.in_memory.retain(|id| bucket_id != *id);
-            self.in_memory.push_back(bucket_id);
-
             bucket
-        }
-
-        fn evict_if_overbooked(&mut self) {
-            let mut bucket_count = self.in_memory.len();
-            while self.is_above_memory_limit() && bucket_count > 1 {
-                let bucket_to_evict = self.in_memory.pop_front().unwrap();
-                bucket_count = self.in_memory.len();
-                info!(
-                    "evicting {} because memory usage is above {} MB (remaining buckets: {})",
-                    &bucket_to_evict,
-                    self.config.memory_limit_mib(),
-                    bucket_count,
-                );
-                self.buckets.get_mut(&bucket_to_evict).unwrap().evict_to_disk();
-            }
-        }
-
-        fn is_above_memory_limit(&self) -> bool {
-            let statm = procinfo::pid::statm_self().unwrap();
-            let page_size = 4096;
-            let used_memory = statm.resident * page_size;
-
-            let mem_limit_in_bytes = self.config.memory_limit_mib() * 1024 * 1024;
-
-            used_memory > mem_limit_in_bytes
         }
 
         pub fn store_all_to_disk(self) {

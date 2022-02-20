@@ -66,7 +66,9 @@ pub mod parser {
     }
 
     fn extract_strings_from_row(row: &String) -> (&str, &str, &str) {
-        // Why not split? It is a lot slower than manually iterating it, and it adds up quickly
+        // Why not &str.split? It is a lot slower than manually iterating it as done here.
+        // That adds up quickly, so this "simple" manual space-skip parsing saves us a lot of time.
+
         let ascii_row = row.as_bytes();
         let last_index = ascii_row.len() - 1;
         let mut target_ip_split = 0;
