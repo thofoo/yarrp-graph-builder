@@ -44,7 +44,7 @@ fn main() {
     info!("Intermediary file path: {}", &config.intermediary_file_path().to_str().unwrap());
     info!("Output path: {}", &config.output_path().to_str().unwrap());
 
-    let preprocessor = Preprocessor::new(&config);
+    let mut preprocessor = Preprocessor::new(&config);
     preprocessor.preprocess_files();
 
     let merger = Merger::new(&config);

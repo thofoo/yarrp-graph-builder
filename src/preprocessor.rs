@@ -1,14 +1,15 @@
 pub mod preprocessor {
+    use std::collections::HashMap;
     use std::fs;
     use std::fs::DirEntry;
-    use std::path::PathBuf;
+    use std::path::{Path, PathBuf};
 
     use log::{info, trace};
     use pbr::ProgressBar;
 
     use crate::bucket_manager::bucket_manager::GraphBucketManager;
     use crate::parameters::parameters::GraphBuilderParameters;
-    use crate::parser;
+    use crate::{parameters, parser, util};
 
     pub struct Preprocessor {
         config: GraphBuilderParameters,
@@ -19,7 +20,7 @@ pub mod preprocessor {
             Preprocessor { config: config.clone() }
         }
 
-        pub fn preprocess_files(&self) {
+        pub fn preprocess_files(&mut self) {
             if !self.config.should_preprocess() {
                 info!("Preprocessing flag is FALSE - skipping preprocessing.");
                 return;
@@ -38,12 +39,18 @@ pub mod preprocessor {
 
             info!("Processing {} files...", file_count);
             progress_bar.set(0);
-            let mut memory = GraphBucketManager::new(&self.config);
+
+            let mut index: HashMap<u128, u32> = HashMap::new();
             for file in files_to_process {
+                self.config.add_intermediate_suffix(file.file_name().to_str().unwrap());
+
+                let mut memory = GraphBucketManager::new(&self.config, &mut index);
                 self.preprocess_single_file(file.path(), &mut memory);
+                memory.store_buckets_to_disk();
                 progress_bar.inc();
             }
-            memory.store_all_to_disk();
+
+            self.store_index_to_disk(index);
 
             info!("Processing of {} files completed.", file_count);
         }
@@ -65,6 +72,13 @@ pub mod preprocessor {
                 .filter(|&s| !s.starts_with("#"))
                 .map(str::to_string)
                 .collect()
+        }
+
+        fn store_index_to_disk(&self, index: HashMap<u128, u32>) {
+            let node_index_path = self.config.intermediary_file_path_original().join(
+                Path::new(parameters::parameters::NODE_INDEX_PATH)
+            );
+            util::util::write_to_file(&node_index_path, &index);
         }
     }
 }

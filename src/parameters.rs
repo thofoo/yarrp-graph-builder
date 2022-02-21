@@ -7,13 +7,13 @@ pub mod parameters {
 
     use crate::IpType;
 
-    const NODE_INDEX_PATH: &str = "index";
-    pub const NODE_INDEX_PATH_SUFFIX: &str = "index/yarrp.node_index.bin";
+    pub const NODE_INDEX_PATH: &str = "yarrp.node_index.bin";
 
     #[derive(Clone)]
     pub struct GraphBuilderParameters {
         address_type: IpType,
         input_path: PathBuf,
+        intermediary_file_path_original: PathBuf,
         intermediary_file_path: PathBuf,
         output_path: PathBuf,
         should_preprocess: bool,
@@ -57,11 +57,11 @@ pub mod parameters {
             }
 
             fs::create_dir_all(&intermediary_file_path).expect("Could not create intermediary file paths");
-            fs::create_dir_all(&intermediary_file_path.join(NODE_INDEX_PATH)).expect("Could not create intermediary file paths");
 
             GraphBuilderParameters {
                 address_type,
                 input_path,
+                intermediary_file_path_original: intermediary_file_path.to_path_buf(),
                 intermediary_file_path,
                 output_path,
                 should_preprocess,
@@ -71,15 +71,26 @@ pub mod parameters {
             }
         }
 
+        pub fn add_intermediate_suffix(&mut self, suffix: &str) {
+            self.intermediary_file_path = self.intermediary_file_path_original.join(
+                Path::new(suffix),
+            );
+            fs::create_dir_all(&self.intermediary_file_path).unwrap();
+        }
+
         pub fn address_type(&self) -> &IpType {
             &self.address_type
         }
         pub fn input_path(&self) -> &PathBuf {
             &self.input_path
         }
+        pub fn intermediary_file_path_original(&self) -> &PathBuf {
+            &self.intermediary_file_path_original
+        }
         pub fn intermediary_file_path(&self) -> &PathBuf {
             &self.intermediary_file_path
         }
+
         pub fn output_path(&self) -> &PathBuf {
             &self.output_path
         }

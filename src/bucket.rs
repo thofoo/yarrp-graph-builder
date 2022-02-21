@@ -13,14 +13,12 @@ pub mod bucket {
     pub struct GraphBucket {
         edge_map: HashMap<u32, Vec<(u32, u8)>>,
         file_path: PathBuf,
-        is_in_memory: bool,
     }
 
     impl GraphBucket {
         pub fn new(file_path: PathBuf) -> GraphBucket {
             GraphBucket {
                 edge_map: GraphBucket::load_or_create(&file_path),
-                is_in_memory: true,
                 file_path,
             }
         }
@@ -41,8 +39,6 @@ pub mod bucket {
         }
 
         pub fn add_node(&mut self, node: InternalNode) {
-            self.ensure_loaded();
-
             if !self.edge_map.contains_key(&node.target_id) {
                 let new_list = Vec::<(u32, u8)>::new();
                 self.edge_map.insert(node.target_id, new_list);
@@ -52,18 +48,11 @@ pub mod bucket {
             list.push((node.hop_id, node.hop_count));
         }
 
-        fn ensure_loaded(&mut self) {
-            if !self.is_in_memory {
-                self.edge_map = GraphBucket::load_or_create(&self.file_path);
-                self.is_in_memory = true;
-            }
-        }
-
         pub fn evict_to_disk(&mut self) {
             let path = &self.file_path;
             util::util::write_to_file(path, &self.edge_map);
             self.edge_map.clear();
-            self.is_in_memory = false;
+            self.edge_map.shrink_to_fit(); // this is to make sure that the memory actually is freed
         }
 
         pub fn edge_map(self) -> HashMap<u32, Vec<(u32, u8)>> {

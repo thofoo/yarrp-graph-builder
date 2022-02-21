@@ -1,24 +1,23 @@
 pub mod bucket_manager {
     use std::collections::HashMap;
-    use std::path::{Path, PathBuf};
+    use std::path::PathBuf;
 
     use crate::bucket::bucket::GraphBucket;
     use crate::structs::yarrp_row::{InternalNode, NodeV4, NodeV6};
-    use crate::{GraphBuilderParameters, util};
-    use crate::parameters;
+    use crate::GraphBuilderParameters;
 
-    pub struct GraphBucketManager {
+    pub struct GraphBucketManager<'a> {
         buckets: HashMap<u8, GraphBucket>,
-        global_ip_mapping: HashMap<u128, u32>,
+        global_ip_mapping: &'a mut HashMap<u128, u32>,
         id_counter: u32,
         config: GraphBuilderParameters,
     }
 
-    impl GraphBucketManager {
-        pub fn new(config: &GraphBuilderParameters) -> GraphBucketManager {
+    impl<'a> GraphBucketManager<'a> {
+        pub fn new(config: &GraphBuilderParameters, global_ip_mapping: &'a mut HashMap<u128, u32>) -> GraphBucketManager<'a> {
             GraphBucketManager {
                 buckets: HashMap::new(),
-                global_ip_mapping: HashMap::new(),
+                global_ip_mapping,
                 id_counter: 1, // 0 is reserved for the source IP
                 config: config.clone(),
             }
@@ -116,11 +115,7 @@ pub mod bucket_manager {
             bucket
         }
 
-        pub fn store_all_to_disk(self) {
-            let node_index_path = self.config.intermediary_file_path().join(
-                Path::new(parameters::parameters::NODE_INDEX_PATH_SUFFIX)
-            );
-            util::util::write_to_file(&node_index_path, &self.global_ip_mapping);
+        pub fn store_buckets_to_disk(self) {
             for (_, mut bucket) in self.buckets {
                 bucket.evict_to_disk()
             }

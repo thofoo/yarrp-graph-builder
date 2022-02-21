@@ -31,7 +31,7 @@ pub mod merger {
             info!("Creating empty output files...");
 
             let index_path = self.config.intermediary_file_path().join(
-                Path::new(parameters::parameters::NODE_INDEX_PATH_SUFFIX)
+                Path::new(parameters::parameters::NODE_INDEX_PATH)
             );
 
             let node_mapping_output_path = self.config.output_path().join(
@@ -51,15 +51,15 @@ pub mod merger {
                 ));
 
             let raw_files_list = fs::read_dir(&self.config.intermediary_file_path()).unwrap();
-            let files_to_process: Vec<DirEntry> = raw_files_list
+            let dirs_to_process: Vec<DirEntry> = raw_files_list
                 .map(|entry| entry.unwrap())
-                .filter(|i| i.path().is_file())
+                .filter(|i| i.path().is_dir())
                 .collect();
 
             info!("Reading in intermediate files...");
 
             self.write_node_mapping(index_path, &mut index_writer);
-            self.write_edge_mapping(files_to_process, &mut edge_writer);
+            self.write_edge_mapping(dirs_to_process, &mut edge_writer);
         }
 
         fn write_node_mapping(&self, index_path: PathBuf, index_writer: &mut Writer<File>) {
@@ -94,49 +94,83 @@ pub mod merger {
             index_writer.flush().unwrap();
         }
 
-        fn write_edge_mapping(&self, files_to_process: Vec<DirEntry>, edge_writer: &mut Writer<File>) {
+        fn write_edge_mapping(&self, dirs_to_process: Vec<DirEntry>, edge_writer: &mut Writer<File>) {
             if !self.config.should_persist_edges() {
                 info!("Edge persistence flag is FALSE - skipping edge persistence.");
                 return;
             }
 
-            let file_count = files_to_process.len() as u64;
-            info!("Processing {} intermediary files to the final format...", file_count);
+            let bucket_count = 256;
 
-            let mut progress_bar = ProgressBar::new(file_count);
+            info!(
+                "Processing {} intermediary directories with {} buckets each to the final format...",
+                dirs_to_process.len(),
+                bucket_count
+            );
+
+            let mut progress_bar = ProgressBar::new(bucket_count);
             progress_bar.set(0);
 
             edge_writer.serialize(("from", "to")).unwrap();
+            for bucket_id in 0..bucket_count {
+                let bucket_name = &format!("yarrp.{}.bin", bucket_id);
 
-            let mut missing_node_counter = -1;
-            for file in files_to_process {
-                let edge_map = GraphBucket::new(file.path()).edge_map();
-                for (_, mut edges) in edge_map {
-                    edges.sort_by_key(|&i| i.1);
+                let files_to_process = dirs_to_process.iter()
+                    .map(|dir| dir.path().join(Path::new(bucket_name)))
+                    .collect();
 
-                    let mut previous_node: i64 = 0; // 0 == source IP
-                    let mut previous_hop = 0;
-                    for (current_node, current_hop) in edges {
-                        if current_hop > previous_hop + 1 {
-                            let missing_hops = (current_hop - 1) - (previous_hop + 1);
-                            for _ in 1..=missing_hops {
-                                edge_writer.serialize((previous_node, missing_node_counter)).unwrap();
-                                previous_node = i64::try_from(missing_node_counter).unwrap();
-                                previous_hop += 1;
-
-                                missing_node_counter -= 1;
-                            }
-                        }
-
-                        edge_writer.serialize((previous_node, current_node)).unwrap();
-                        previous_node = i64::try_from(current_node).unwrap();
-                        previous_hop = current_hop;
-                    }
-                }
+                self.process_single(files_to_process, edge_writer);
                 progress_bar.inc();
+            }
+        }
+
+        fn process_single(&self, files_to_process: Vec<PathBuf>, edge_writer: &mut Writer<File>) {
+            let mut missing_node_counter = -1;
+            let merged_edge_map = self.merge_edge_maps(files_to_process);
+
+            for (_, mut edges) in merged_edge_map {
+                edges.sort_by_key(|&i| i.1);
+
+                let mut previous_node: i64 = 0; // 0 == source IP
+                let mut previous_hop = 0;
+                for (current_node, current_hop) in edges {
+                    if current_hop > previous_hop + 1 {
+                        let missing_hops = (current_hop - 1) - (previous_hop + 1);
+                        for _ in 1..=missing_hops {
+                            edge_writer.serialize((previous_node, missing_node_counter)).unwrap();
+                            previous_node = i64::try_from(missing_node_counter).unwrap();
+                            previous_hop += 1;
+
+                            missing_node_counter -= 1;
+                        }
+                    }
+
+                    edge_writer.serialize((previous_node, current_node)).unwrap();
+                    previous_node = i64::try_from(current_node).unwrap();
+                    previous_hop = current_hop;
+                }
             }
 
             edge_writer.flush().unwrap();
+        }
+
+        fn merge_edge_maps(&self, files_to_process: Vec<PathBuf>) -> HashMap<u32, Vec<(u32, u8)>> {
+            let mut edge_map = HashMap::new();
+
+            for file in files_to_process {
+                let partial_map = GraphBucket::new(file).edge_map();
+
+                for (key, value) in partial_map {
+                    if !edge_map.contains_key(&key) {
+                        edge_map.insert(key, Vec::new());
+                    }
+
+                    let list = edge_map.get_mut(&key).unwrap();
+                    list.extend(value);
+                }
+            }
+
+            edge_map
         }
     }
 }
