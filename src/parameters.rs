@@ -26,6 +26,7 @@ pub mod parameters {
         pub fn new(
             address_type: IpType,
             input_folder: &str,
+            intermediate_folder: &str,
             output_folder: &str,
             should_preprocess: bool,
             should_merge: bool,
@@ -33,7 +34,7 @@ pub mod parameters {
             should_persist_edges: bool,
         ) -> GraphBuilderParameters {
             let input_path = Path::new(input_folder).to_path_buf();
-            let intermediary_file_path = input_path.join(Path::new("intermediate"));
+            let intermediary_file_path = Path::new(intermediate_folder).to_path_buf();
             let output_path = Path::new(output_folder).to_path_buf();
 
             if !input_path.exists() {
@@ -43,6 +44,16 @@ pub mod parameters {
 
             if !input_path.is_dir() {
                 error!("Specified input path is not a directory");
+                exit(1);
+            }
+
+            if !intermediary_file_path.exists() {
+                error!("Specified intermediate path does not exist");
+                exit(1);
+            }
+
+            if !intermediary_file_path.is_dir() {
+                error!("Specified intermediate path is not a directory");
                 exit(1);
             }
 

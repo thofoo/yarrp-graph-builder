@@ -30,8 +30,9 @@ fn main() {
     // TODO get from cmd line args
     let config = GraphBuilderParameters::new(
         IpType::V6,
-        "../01_yarrp_scan/input/v6",
-        "../01_yarrp_scan/output/v6",
+        "/mnt/scans/2021_09_routingloops/01_yarrp_scan/ipv6",
+        "/home/tfodor/2021_09_yarrp_graph/",
+        "/home/tfodor/2021_09_yarrp_graph/output",
         /* should_preprocess: */ true,
         /* should_merge: */ true,
         /* should_persist_index: */ true,
