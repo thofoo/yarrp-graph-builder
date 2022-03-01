@@ -7,7 +7,7 @@ pub mod parser {
 
     use crate::bucket_manager::bucket_manager::GraphBucketManager;
     use crate::structs::util::IpType;
-    use crate::structs::yarrp_row::{NodeV4, NodeV6};
+    use crate::structs::data::{NodeV4, NodeV6};
 
     pub fn parse_data_from_row(row: &String, memory: &mut GraphBucketManager, expected_ip_type: &IpType) {
         let (raw_target_ip, raw_hop_count, raw_hop_ip) = extract_strings_from_row(row);

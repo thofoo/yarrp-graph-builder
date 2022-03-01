@@ -8,7 +8,9 @@ pub mod util {
     }
 }
 
-pub mod yarrp_row {
+pub mod data {
+    use serde::Deserialize;
+
     pub struct NodeV4 {
         pub target_ip: u32,
         pub hop_ip: u32,
@@ -25,5 +27,11 @@ pub mod yarrp_row {
         pub target_id: u32,
         pub hop_id: u32,
         pub hop_count: u8,
+    }
+
+    #[derive(Debug, Deserialize, Eq, PartialEq)]
+    pub struct CsvEdge {
+        pub from: i32,
+        pub to: i32,
     }
 }

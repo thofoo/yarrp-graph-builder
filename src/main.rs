@@ -2,6 +2,7 @@ extern crate core;
 
 use env_logger::Env;
 use log::{info, LevelFilter};
+use crate::grapher::grapher::Grapher;
 use crate::merger::merger::Merger;
 
 use crate::parameters::parameters::GraphBuilderParameters;
@@ -16,6 +17,7 @@ mod bucket;
 mod bucket_manager;
 mod merger;
 mod parser;
+mod grapher;
 
 fn main() {
     let mut env_builder = env_logger::builder();
@@ -29,14 +31,15 @@ fn main() {
 
     // TODO get from cmd line args
     let config = GraphBuilderParameters::new(
-        IpType::V6,
-        "/mnt/scans/2021_09_routingloops/01_yarrp_scan/ipv6",
-        "/home/tfodor/2021_09_yarrp_graph/",
-        "/home/tfodor/2021_09_yarrp_graph/output",
-        /* should_preprocess: */ true,
-        /* should_merge: */ true,
-        /* should_persist_index: */ true,
-        /* should_persist_edges: */ true,
+        IpType::V4,
+        "../01_yarrp_scan/input/v4",
+        "../01_yarrp_scan/output/v4/intermediate",
+        "../01_yarrp_scan/output/v4",
+        /* should_preprocess: */ false,
+        /* should_merge: */ false,
+        /* should_persist_index: */ false,
+        /* should_persist_edges: */ false,
+        /* should_compute_graph: */ true,
     );
 
     info!("Expecting to read IP{:?} addresses.", &config.address_type());
@@ -50,4 +53,7 @@ fn main() {
 
     let merger = Merger::new(&config);
     merger.merge_data();
+
+    let grapher = Grapher::new(&config);
+    grapher.graph_data();
 }

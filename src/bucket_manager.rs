@@ -3,7 +3,7 @@ pub mod bucket_manager {
     use std::path::PathBuf;
 
     use crate::bucket::bucket::GraphBucket;
-    use crate::structs::yarrp_row::{InternalNode, NodeV4, NodeV6};
+    use crate::structs::data::{InternalNode, NodeV4, NodeV6};
     use crate::GraphBuilderParameters;
 
     pub struct GraphBucketManager<'a> {

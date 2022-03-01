@@ -20,6 +20,7 @@ pub mod parameters {
         should_merge: bool,
         should_persist_index: bool,
         should_persist_edges: bool,
+        should_compute_graph: bool,
     }
 
     impl GraphBuilderParameters {
@@ -32,6 +33,7 @@ pub mod parameters {
             should_merge: bool,
             should_persist_index: bool,
             should_persist_edges: bool,
+            should_compute_graph: bool,
         ) -> GraphBuilderParameters {
             let input_path = Path::new(input_folder).to_path_buf();
             let intermediary_file_path = Path::new(intermediate_folder).to_path_buf();
@@ -79,6 +81,7 @@ pub mod parameters {
                 should_merge,
                 should_persist_index,
                 should_persist_edges,
+                should_compute_graph,
             }
         }
 
@@ -117,6 +120,9 @@ pub mod parameters {
         }
         pub fn should_persist_edges(&self) -> bool {
             self.should_persist_edges
+        }
+        pub fn should_compute_graph(&self) -> bool {
+            self.should_compute_graph
         }
     }
 }

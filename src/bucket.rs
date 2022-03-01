@@ -5,7 +5,7 @@ pub mod bucket {
 
     use serde::{Deserialize, Serialize};
 
-    use crate::structs::yarrp_row::InternalNode;
+    use crate::structs::data::InternalNode;
     use crate::util;
 
     #[derive(Serialize)]
