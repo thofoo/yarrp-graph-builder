@@ -83,7 +83,7 @@ pub mod merger {
             index.iter()
                 .map(|(&ip, &node_id)| {
                     let ip_addr = if self.config.address_type() == &IpType::V4 {
-                        IpAddr::V4(Ipv4Addr::from(u32::try_from(ip & 0xffffffff).unwrap()))
+                        IpAddr::V4(Ipv4Addr::from(u32::try_from(ip).unwrap()))
                     } else {
                         IpAddr::V6(Ipv6Addr::from(ip))
                     };

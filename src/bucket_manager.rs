@@ -14,11 +14,15 @@ pub mod bucket_manager {
     }
 
     impl<'a> GraphBucketManager<'a> {
-        pub fn new(config: &GraphBuilderParameters, global_ip_mapping: &'a mut HashMap<u128, u32>) -> GraphBucketManager<'a> {
+        pub fn new(
+            config: &GraphBuilderParameters,
+            global_ip_mapping: &'a mut HashMap<u128, u32>,
+            counter: u32
+        ) -> GraphBucketManager<'a> {
             GraphBucketManager {
                 buckets: HashMap::new(),
                 global_ip_mapping,
-                id_counter: 1, // 0 is reserved for the source IP
+                id_counter: counter,
                 config: config.clone(),
             }
         }
@@ -119,6 +123,11 @@ pub mod bucket_manager {
             for (_, mut bucket) in self.buckets {
                 bucket.evict_to_disk()
             }
+        }
+
+
+        pub fn id_counter(&self) -> u32 {
+            self.id_counter
         }
     }
 }

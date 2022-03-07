@@ -41,11 +41,17 @@ pub mod preprocessor {
             progress_bar.set(0);
 
             let mut index: HashMap<u128, u32> = HashMap::new();
+            let mut counter = 1; // 0 is reserved for the source IP
             for file in files_to_process {
                 self.config.add_intermediate_suffix(file.file_name().to_str().unwrap());
 
-                let mut memory = GraphBucketManager::new(&self.config, &mut index);
+                let mut memory = GraphBucketManager::new(
+                    &self.config,
+                    &mut index,
+                    counter
+                );
                 self.preprocess_single_file(file.path(), &mut memory);
+                counter = memory.id_counter();
                 memory.store_buckets_to_disk();
                 progress_bar.inc();
             }
