@@ -13,4 +13,3 @@ log = "0.4.14"
 env_logger = "0.8"
 pbr = "1.0.4" # Terminal progress bar
 graphrs = "0.6.0"
-petgraph = "0.6.0"

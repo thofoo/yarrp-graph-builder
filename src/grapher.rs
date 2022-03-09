@@ -1,16 +1,11 @@
 pub mod grapher {
-    use std::collections::HashMap;
-    use std::io::{stdout, Write};
     use std::path::Path;
-    use std::thread::sleep;
-    use std::time;
-    use std::time::Duration;
+    use graphrs::{Edge, EdgeDedupeStrategy, Graph, GraphSpecs, MissingNodeStrategy, SelfLoopsFalseStrategy};
+    use graphrs::algorithms::centrality::betweenness::betweenness_centrality;
 
     use log::info;
-    use petgraph::Graph;
-    use petgraph::graph::NodeIndex;
 
-    use crate::{GraphBuilderParameters, x_ego};
+    use crate::GraphBuilderParameters;
     use crate::structs::data::CsvEdge;
 
     pub struct Grapher {
@@ -32,48 +27,37 @@ pub mod grapher {
                 self.config.output_path().join(Path::new("edges.csv"))
             ).unwrap();
 
-            let mut node_cache = HashMap::<i32, NodeIndex>::new();
-            let mut graph = Graph::<i32, i32>::new();
-            let parsed_edges: Vec<(NodeIndex, NodeIndex)> = reader.deserialize()
+            let parsed_edges = reader.deserialize()
                 .skip(1)
                 .take_while(|edge| edge.is_ok())
                 .map(|edge: Result<CsvEdge, _>| {
                     let data = edge.unwrap();
-                    (
-                        self.retrieve_node(&mut graph, &mut node_cache, data.from),
-                        self.retrieve_node(&mut graph, &mut node_cache, data.to),
-                    )
+                    Edge::new(data.from, data.to)
                 })
                 .into_iter()
                 .collect();
 
-            print!("done parsing");
+            let graph = Graph::<i32, i32>::new_from_nodes_and_edges(
+                vec![], // we let the missing node strategy create our nodes
+                parsed_edges,
+                GraphSpecs {
+                    directed: true,
+                    edge_dedupe_strategy: EdgeDedupeStrategy::KeepFirst,
+                    missing_node_strategy: MissingNodeStrategy::Create,
+                    multi_edges: false,
+                    self_loops: true,
+                    self_loops_false_strategy: SelfLoopsFalseStrategy::Drop,
+                }
+            ).expect("Building graph failed");
 
-            let starting_node: NodeIndex = node_cache[&0];
+            let centralities = betweenness_centrality(
+                &graph,
+                /* weighted = */ false,
+                /* normalized = */ false,
+            ).expect("Could not compute centralities for graph");
 
-            // we don't need this anymore
-            node_cache.clear();
-            node_cache.shrink_to_fit();
-
-            graph.extend_with_edges(parsed_edges.iter());
-
-
-            let edges = graph.edges(starting_node);
-            print!("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
-            stdout().flush().unwrap();
-            sleep(Duration::from_secs(20));
-            print!("BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB");
-            x_ego::x_ego_betweenness::calculate(&graph, &starting_node);
-            print!("CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC");
-        }
-
-        fn retrieve_node(&self, graph: &mut Graph<i32, i32>, node_cache: &mut HashMap<i32, NodeIndex>, label: i32) -> NodeIndex {
-            if !node_cache.contains_key(&label) {
-                let node = graph.add_node(label);
-                node_cache.insert(label, node);
-            }
-
-            *node_cache.get(&label).unwrap()
+            println!("Centralities for {:?}", self.config.address_type());
+            println!("{:?}", centralities);
         }
     }
 }
