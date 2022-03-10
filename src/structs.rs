@@ -24,14 +24,14 @@ pub mod data {
     }
 
     pub struct InternalNode {
-        pub target_id: u32,
-        pub hop_id: u32,
+        pub target_id: u64,
+        pub hop_id: u64,
         pub hop_count: u8,
     }
 
     #[derive(Debug, Deserialize, Eq, PartialEq)]
     pub struct CsvEdge {
-        pub from: i32,
-        pub to: i32,
+        pub from: i64,
+        pub to: i64,
     }
 }

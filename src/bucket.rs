@@ -11,7 +11,7 @@ pub mod bucket {
     #[derive(Serialize)]
     #[derive(Deserialize)]
     pub struct GraphBucket {
-        edge_map: HashMap<u32, Vec<(u32, u8)>>,
+        edge_map: HashMap<u64, Vec<(u64, u8)>>,
         file_path: PathBuf,
     }
 
@@ -23,7 +23,7 @@ pub mod bucket {
             }
         }
 
-        fn load_or_create(file_path: &PathBuf) -> HashMap<u32, Vec<(u32, u8)>> {
+        fn load_or_create(file_path: &PathBuf) -> HashMap<u64, Vec<(u64, u8)>> {
             let f = File::open(file_path);
             if f.is_ok() {
                 let file = f.unwrap();
@@ -40,7 +40,7 @@ pub mod bucket {
 
         pub fn add_node(&mut self, node: InternalNode) {
             if !self.edge_map.contains_key(&node.target_id) {
-                let new_list = Vec::<(u32, u8)>::new();
+                let new_list = Vec::<(u64, u8)>::new();
                 self.edge_map.insert(node.target_id, new_list);
             }
 
@@ -55,7 +55,7 @@ pub mod bucket {
             self.edge_map.shrink_to_fit(); // this is to make sure that the memory actually is freed
         }
 
-        pub fn edge_map(self) -> HashMap<u32, Vec<(u32, u8)>> {
+        pub fn edge_map(self) -> HashMap<u64, Vec<(u64, u8)>> {
             self.edge_map
         }
     }

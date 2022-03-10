@@ -40,7 +40,7 @@ pub mod preprocessor {
             info!("Processing {} files...", file_count);
             progress_bar.set(0);
 
-            let mut index: HashMap<u128, u32> = HashMap::new();
+            let mut index: HashMap<u128, u64> = HashMap::new();
             let mut counter = 1; // 0 is reserved for the source IP
             for file in files_to_process {
                 self.config.add_intermediate_suffix(file.file_name().to_str().unwrap());
@@ -80,7 +80,7 @@ pub mod preprocessor {
                 .collect()
         }
 
-        fn store_index_to_disk(&self, index: HashMap<u128, u32>) {
+        fn store_index_to_disk(&self, index: HashMap<u128, u64>) {
             let node_index_path = self.config.intermediary_file_path_original().join(
                 Path::new(parameters::parameters::NODE_INDEX_PATH)
             );

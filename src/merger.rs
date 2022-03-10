@@ -71,7 +71,7 @@ pub mod merger {
             let index_file = File::open(&index_path).expect(&format!(
                 "File at {} does not exist", index_path.to_str().unwrap()
             ));
-            let index: HashMap<u128, u32> = bincode::deserialize_from(index_file).expect(&format!(
+            let index: HashMap<u128, u64> = bincode::deserialize_from(index_file).expect(&format!(
                 "File at {} does not contain or contains invalid node index data",
                 index_path.to_str().unwrap()
             ));
@@ -154,7 +154,7 @@ pub mod merger {
             edge_writer.flush().unwrap();
         }
 
-        fn merge_edge_maps(&self, files_to_process: Vec<PathBuf>) -> HashMap<u32, Vec<(u32, u8)>> {
+        fn merge_edge_maps(&self, files_to_process: Vec<PathBuf>) -> HashMap<u64, Vec<(u64, u8)>> {
             let mut edge_map = HashMap::new();
 
             for file in files_to_process {

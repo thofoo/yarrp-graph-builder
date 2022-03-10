@@ -1,9 +1,10 @@
 pub mod grapher {
-    use std::path::Path;
-    use graphrs::{Edge, EdgeDedupeStrategy, Graph, GraphSpecs, MissingNodeStrategy, SelfLoopsFalseStrategy};
-    use graphrs::algorithms::centrality::betweenness::betweenness_centrality;
+    use std::collections::HashSet;
+    use std::io::{BufReader, Write};
+    use std::path::{Path, PathBuf};
 
-    use log::info;
+    use log::{info, warn};
+    use rev_lines::RevLines;
 
     use crate::GraphBuilderParameters;
     use crate::structs::data::CsvEdge;
@@ -23,41 +24,66 @@ pub mod grapher {
                 return;
             }
 
-            let mut reader = csv::Reader::from_path(
-                self.config.output_path().join(Path::new("edges.csv"))
-            ).unwrap();
+            let edges_path = self.config.output_path().join(Path::new("edges.csv"));
+            let mapping_path = self.config.output_path().join(Path::new("mapping.csv"));
 
-            let parsed_edges = reader.deserialize()
+            let known_node_count = linecount::count_lines(
+                std::fs::File::open(mapping_path).unwrap()
+            ).unwrap();
+            let unknown_node_count = find_highest_unknown_node(&edges_path) + 1;
+
+            let mut known_node_edges = vec![HashSet::<i64>::new(); known_node_count];
+            // size must be unknown_node_count + 1 because we have no node 0
+            // 0 is deliberately left empty to avoid any off-by-one errors
+            let mut unknown_node_edges = vec![HashSet::<i64>::new(); unknown_node_count + 1];
+
+            let mut edges_reader = csv::Reader::from_path(edges_path).unwrap();
+            edges_reader.deserialize()
                 .skip(1)
                 .take_while(|edge| edge.is_ok())
-                .map(|edge: Result<CsvEdge, _>| {
+                .for_each(|edge: Result<CsvEdge, _>| {
                     let data = edge.unwrap();
-                    Edge::new(data.from, data.to)
-                })
-                .into_iter()
-                .collect();
 
-            let graph = Graph::<i32, i32>::new_from_nodes_and_edges(
-                vec![], // we let the missing node strategy create our nodes
-                parsed_edges,
-                GraphSpecs {
-                    directed: true,
-                    edge_dedupe_strategy: EdgeDedupeStrategy::KeepFirst,
-                    missing_node_strategy: MissingNodeStrategy::Create,
-                    multi_edges: false,
-                    self_loops: true,
-                    self_loops_false_strategy: SelfLoopsFalseStrategy::Drop,
-                }
-            ).expect("Building graph failed");
+                    if data.from >= 0 {
+                        known_node_edges[data.from.unsigned_abs() as usize].insert(data.to);
+                    } else {
+                        known_node_edges[data.from.unsigned_abs() as usize].insert(data.to);
+                    }
+                });
 
-            let centralities = betweenness_centrality(
-                &graph,
-                /* weighted = */ false,
-                /* normalized = */ false,
-            ).expect("Could not compute centralities for graph");
-
-            println!("Centralities for {:?}", self.config.address_type());
-            println!("{:?}", centralities);
+            println!("done");
+            std::io::stdout().flush().unwrap();
+            std::thread::sleep(
+                std::time::Duration::from_secs(20)
+            );
+            println!("now done for real");
+            known_node_edges[0].len();
+            unknown_node_edges[0].len();
         }
+    }
+
+    fn find_highest_unknown_node(edges_path: &PathBuf) -> usize {
+        // we assign the negative IDs "incrementally", thus the highest value has to be at the end
+        // of the file. once we find a negative value (bottom-up), that is the value we want
+        // THIS ASSUMPTION IS WRONG // TODO FIX
+        // TODO FIX
+
+        let buffer = BufReader::new(std::fs::File::open(edges_path).unwrap());
+        let rev_lines = RevLines::new(buffer).unwrap();
+
+        for line in rev_lines {
+            let csv_edge: CsvEdge = csv::StringRecord::from(line.split(",").collect::<Vec<&str>>())
+                .deserialize(None).unwrap();
+
+            if csv_edge.to < 0 {
+                return csv_edge.to.unsigned_abs() as usize
+            }
+            if csv_edge.from < 0 {
+                return csv_edge.from.unsigned_abs() as usize
+            }
+        }
+
+        warn!("No unknown nodes found, this could be a mistake");
+        return 0
     }
 }

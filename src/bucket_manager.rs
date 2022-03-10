@@ -8,16 +8,16 @@ pub mod bucket_manager {
 
     pub struct GraphBucketManager<'a> {
         buckets: HashMap<u8, GraphBucket>,
-        global_ip_mapping: &'a mut HashMap<u128, u32>,
-        id_counter: u32,
+        global_ip_mapping: &'a mut HashMap<u128, u64>,
+        id_counter: u64,
         config: GraphBuilderParameters,
     }
 
     impl<'a> GraphBucketManager<'a> {
         pub fn new(
             config: &GraphBuilderParameters,
-            global_ip_mapping: &'a mut HashMap<u128, u32>,
-            counter: u32
+            global_ip_mapping: &'a mut HashMap<u128, u64>,
+            counter: u64
         ) -> GraphBucketManager<'a> {
             GraphBucketManager {
                 buckets: HashMap::new(),
@@ -126,7 +126,7 @@ pub mod bucket_manager {
         }
 
 
-        pub fn id_counter(&self) -> u32 {
+        pub fn id_counter(&self) -> u64 {
             self.id_counter
         }
     }
