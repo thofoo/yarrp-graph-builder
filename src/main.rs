@@ -2,22 +2,17 @@ extern crate core;
 
 use env_logger::Env;
 use log::{info, LevelFilter};
-use crate::grapher::grapher::Grapher;
-use crate::merger::merger::Merger;
+use crate::common::parameters::GraphBuilderParameters;
+use crate::common::structs::util::IpType;
+use crate::graph::grapher::Grapher;
+use crate::merge::merger::Merger;
+use crate::preprocess::preprocessor::Preprocessor;
 
-use crate::parameters::parameters::GraphBuilderParameters;
-use crate::preprocessor::preprocessor::Preprocessor;
-use crate::structs::util::IpType;
-
-mod util;
-mod structs;
-mod preprocessor;
-mod parameters;
-mod bucket;
-mod bucket_manager;
-mod merger;
-mod parser;
-mod grapher;
+mod merge;
+mod graph;
+mod preprocess;
+mod common;
+mod buckets;
 
 fn main() {
     let mut env_builder = env_logger::builder();
@@ -31,14 +26,14 @@ fn main() {
 
     // TODO get from cmd line args
     let config = GraphBuilderParameters::new(
-        IpType::V4,
-        "../../01_yarrp_scan/input/v4",
-        "../../01_yarrp_scan/output/v4/intermediate",
-        "../../01_yarrp_scan/output/v4",
-        /* should_preprocess: */ false,
-        /* should_merge: */ false,
-        /* should_persist_index: */ false,
-        /* should_persist_edges: */ false,
+        IpType::V6,
+        "../../01_yarrp_scan/input/v6",
+        "../../01_yarrp_scan/output/v6/intermediate",
+        "../../01_yarrp_scan/output/v6",
+        /* should_preprocess: */ true,
+        /* should_merge: */ true,
+        /* should_persist_index: */ true,
+        /* should_persist_edges: */ true,
         /* should_compute_graph: */ true,
     );
 

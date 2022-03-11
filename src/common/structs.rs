@@ -9,6 +9,7 @@ pub mod util {
 }
 
 pub mod data {
+    use serde::Serialize;
     use serde::Deserialize;
 
     pub struct NodeV4 {
@@ -33,5 +34,11 @@ pub mod data {
     pub struct CsvEdge {
         pub from: i64,
         pub to: i64,
+    }
+
+    #[derive(Debug, Serialize, Deserialize, Eq, PartialEq)]
+    pub struct MaxNodeIds {
+        pub known: usize,
+        pub unknown: usize,
     }
 }
