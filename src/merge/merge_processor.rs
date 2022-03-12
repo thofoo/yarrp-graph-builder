@@ -7,6 +7,7 @@ use crate::buckets::bucket::GraphBucket;
 pub struct MergeProcessor<'a> {
     edge_writer: &'a mut Writer<File>,
     missing_node_counter: i64,
+    missing_node_memory: HashMap<i64, i64>,
 }
 
 impl<'a> MergeProcessor<'a> {
@@ -14,6 +15,7 @@ impl<'a> MergeProcessor<'a> {
         MergeProcessor {
             edge_writer,
             missing_node_counter: -1,
+            missing_node_memory: HashMap::new(),
         }
     }
 
@@ -29,11 +31,16 @@ impl<'a> MergeProcessor<'a> {
                 if current_hop > previous_hop + 1 {
                     let missing_hops = (current_hop - 1) - (previous_hop + 1);
                     for _ in 0..missing_hops {
-                        self.edge_writer.serialize((previous_node, self.missing_node_counter)).unwrap();
-                        previous_node = i64::try_from(self.missing_node_counter).unwrap();
-                        previous_hop += 1;
+                        if !self.missing_node_memory.contains_key(&previous_node) {
+                            self.missing_node_memory.insert(previous_node, self.missing_node_counter);
+                            self.missing_node_counter -= 1;
+                        }
 
-                        self.missing_node_counter -= 1;
+                        let new_node_id = *self.missing_node_memory.get(&previous_node).unwrap();
+
+                        self.edge_writer.serialize((previous_node, new_node_id)).unwrap();
+                        previous_node = i64::try_from(new_node_id).unwrap();
+                        previous_hop += 1;
                     }
                 }
 

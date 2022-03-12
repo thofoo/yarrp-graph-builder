@@ -35,25 +35,19 @@ impl Merger {
             Path::new(parameters::NODE_INDEX_PATH)
         );
 
-        let node_mapping_output_path = self.config.output_path().join(
-            Path::new("mapping.csv")
-        );
-        let edge_output_path = self.config.output_path().join(
-            Path::new("edges.csv")
-        );
-        let max_node_id_path = self.config.output_path().join(
-            Path::new("max_node_ids.csv")
-        );
+        let node_mapping_output_path = self.config.output_paths().mapping();
+        let edge_output_path = self.config.output_paths().edges();
+        let max_node_id_path = self.config.output_paths().max_node_ids();
 
         let mut index_writer = csv::Writer::from_path(&node_mapping_output_path)
             .expect(&format!(
                 "Could not create file for storing node mapping at {}", node_mapping_output_path.to_str().unwrap()
             ));
-        let mut edge_writer = csv::Writer::from_path(&edge_output_path)
+        let mut edge_writer = csv::Writer::from_path(&self.config.output_paths().edges())
             .expect(&format!(
                 "Could not create file for storing edges at {}", edge_output_path.to_str().unwrap()
             ));
-        let mut max_node_ids_writer = csv::Writer::from_path(&max_node_id_path)
+        let mut max_node_ids_writer = csv::Writer::from_path(&self.config.output_paths().max_node_ids())
             .expect(&format!(
                 "Could not create file for storing node mapping at {}", max_node_id_path.to_str().unwrap()
             ));

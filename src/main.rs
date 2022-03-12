@@ -26,10 +26,10 @@ fn main() {
 
     // TODO get from cmd line args
     let config = GraphBuilderParameters::new(
-        IpType::V6,
-        "../../01_yarrp_scan/input/v6",
-        "../../01_yarrp_scan/output/v6/intermediate",
-        "../../01_yarrp_scan/output/v6",
+        IpType::V4,
+        "../../01_yarrp_scan/input/v4",
+        "../../01_yarrp_scan/output/v4/intermediate",
+        "../../01_yarrp_scan/output/v4",
         /* should_preprocess: */ true,
         /* should_merge: */ true,
         /* should_persist_index: */ true,
@@ -39,9 +39,7 @@ fn main() {
 
     info!("Expecting to read IP{:?} addresses.", &config.address_type());
 
-    info!("Input path: {}", &config.input_path().to_str().unwrap());
-    info!("Intermediary file path: {}", &config.intermediary_file_path().to_str().unwrap());
-    info!("Output path: {}", &config.output_path().to_str().unwrap());
+    config.print_path_info();
 
     let mut preprocessor = Preprocessor::new(&config);
     preprocessor.preprocess_files();
@@ -50,5 +48,5 @@ fn main() {
     merger.merge_data();
 
     let grapher = Grapher::new(&config);
-    grapher.graph_data();
+    grapher.collect_graph_stats();
 }

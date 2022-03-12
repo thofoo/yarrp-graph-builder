@@ -2,11 +2,35 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::exit;
 
-use log::error;
+use log::{error, info};
 
 use crate::IpType;
 
 pub const NODE_INDEX_PATH: &str = "yarrp.node_index.bin";
+
+#[derive(Clone, Debug)]
+pub struct OutputPaths {
+    _root: PathBuf,
+    mapping: PathBuf,
+    edges: PathBuf,
+    max_node_ids: PathBuf,
+    xe_betweenness: PathBuf,
+}
+
+impl OutputPaths {
+    pub fn mapping(&self) -> &PathBuf {
+        &self.mapping
+    }
+    pub fn edges(&self) -> &PathBuf {
+        &self.edges
+    }
+    pub fn max_node_ids(&self) -> &PathBuf {
+        &self.max_node_ids
+    }
+    pub fn xe_betweenness(&self) -> &PathBuf {
+        &self.xe_betweenness
+    }
+}
 
 #[derive(Clone)]
 pub struct GraphBuilderParameters {
@@ -14,12 +38,13 @@ pub struct GraphBuilderParameters {
     input_path: PathBuf,
     intermediary_file_path_original: PathBuf,
     intermediary_file_path: PathBuf,
-    output_path: PathBuf,
     should_preprocess: bool,
     should_merge: bool,
     should_persist_index: bool,
     should_persist_edges: bool,
     should_compute_graph: bool,
+
+    output_paths: OutputPaths,
 }
 
 impl GraphBuilderParameters {
@@ -70,12 +95,20 @@ impl GraphBuilderParameters {
 
         fs::create_dir_all(&intermediary_file_path).expect("Could not create intermediary file paths");
 
+        let output_paths = OutputPaths {
+            _root: output_path.to_path_buf(),
+            mapping: output_path.to_path_buf().join(Path::new("mapping.csv")),
+            edges: output_path.to_path_buf().join(Path::new("edges.csv")),
+            max_node_ids: output_path.to_path_buf().join(Path::new("max_node_ids.csv")),
+            xe_betweenness: output_path.to_path_buf().join(Path::new("xe_betweenness.csv")),
+        };
+
         GraphBuilderParameters {
             address_type,
             input_path,
             intermediary_file_path_original: intermediary_file_path.to_path_buf(),
             intermediary_file_path,
-            output_path,
+            output_paths,
             should_preprocess,
             should_merge,
             should_persist_index,
@@ -104,10 +137,6 @@ impl GraphBuilderParameters {
         &self.intermediary_file_path
     }
 
-    pub fn output_path(&self) -> &PathBuf {
-        &self.output_path
-    }
-
     pub fn should_preprocess(&self) -> bool {
         self.should_preprocess
     }
@@ -122,5 +151,15 @@ impl GraphBuilderParameters {
     }
     pub fn should_compute_graph(&self) -> bool {
         self.should_compute_graph
+    }
+
+    pub fn output_paths(&self) -> &OutputPaths {
+        &self.output_paths
+    }
+
+    pub fn print_path_info(&self) {
+        info!("Input path: {}", self.input_path().to_str().unwrap());
+        info!("Intermediary file path: {}", self.intermediary_file_path().to_str().unwrap());
+        info!("Output paths: {:?}", self.output_paths());
     }
 }
