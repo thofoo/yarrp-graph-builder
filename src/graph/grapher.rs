@@ -1,8 +1,8 @@
 use log::info;
 
 use crate::common::structs::data::MaxNodeIds;
+use crate::graph::betweenness::BetweennessCalculator;
 use crate::graph::graph::Graph;
-use crate::graph::xe_betweenness::XeBetweennessCalculator;
 use crate::GraphBuilderParameters;
 
 pub struct Grapher {
@@ -38,7 +38,7 @@ impl Grapher {
         let mut graph = Graph::new(max_node_ids);
         graph.parse(edges_path);
 
-        let mut calculator = XeBetweennessCalculator::new(graph, xe_betweenness_writer);
+        let mut calculator = BetweennessCalculator::new(graph, xe_betweenness_writer);
         calculator.write_values_to_disk();
     }
 }

@@ -30,10 +30,10 @@ fn main() {
         "../../01_yarrp_scan/input/v4",
         "../../01_yarrp_scan/output/v4/intermediate",
         "../../01_yarrp_scan/output/v4",
-        /* should_preprocess: */ true,
-        /* should_merge: */ true,
-        /* should_persist_index: */ true,
-        /* should_persist_edges: */ true,
+        /* should_preprocess: */ false,
+        /* should_merge: */ false,
+        /* should_persist_index: */ false,
+        /* should_persist_edges: */ false,
         /* should_compute_graph: */ true,
     );
 
