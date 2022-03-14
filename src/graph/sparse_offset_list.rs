@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::ops::{Index, IndexMut};
 
 pub struct SpareOffsetList<T: Clone> {
     map: HashMap<usize, T>,
@@ -13,18 +12,26 @@ impl <T: Clone> SpareOffsetList<T> {
             default: default.clone(),
         }
     }
-}
 
-impl <T: Clone> Index<usize> for SpareOffsetList<T> {
-    type Output = T;
+    pub fn get(&mut self, index: usize) -> &T {
+        if !self.map.contains_key(&index) {
+            let value = self.default.clone();
+            self.map.insert(index, value);
+        }
 
-    fn index(&self, index: usize) -> &Self::Output {
-        &self.map.get(&index).get_or_insert(&self.default.clone())
+        self.map.get(&index).unwrap()
     }
-}
 
-impl <T: Clone> IndexMut<usize> for SpareOffsetList<T> {
-    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
-        &mut self.map.get_mut(&index).get_or_insert(&mut self.default.clone())
+    pub fn get_mut(&mut self, index: usize) -> &mut T {
+        if !self.map.contains_key(&index) {
+            let value = self.default.clone();
+            self.map.insert(index, value);
+        }
+
+        self.map.get_mut(&index).unwrap()
+    }
+
+    pub fn set(&mut self, index: usize, value: T) {
+        self.map.insert(index, value);
     }
 }
