@@ -1,4 +1,3 @@
-use std::collections::HashSet;
 use std::fs::File;
 
 use csv::Writer;
@@ -27,8 +26,12 @@ impl BetweennessCalculator {
         let mut progress_bar = ProgressBar::new(node_count as u64);
         progress_bar.set(0);
 
+        let boundaries = self.graph.edges().max_node_ids();
+        let min_node = -(boundaries.unknown as i64);
+        let max_node = boundaries.known as i64;
+
         let mut c_list: OffsetList<f64> = OffsetList::new_same_size_as(0.0, neighbors);
-        for s in 0..node_count {
+        for s in min_node..=max_node {
             progress_bar.set(s as u64);
 
             let memory = BetweennessMemory::new();
@@ -46,7 +49,7 @@ impl BetweennessCalculator {
             while !q.is_empty() {
                 let v = q.upoll();
                 s_stack.push(v);
-                for w in self.get_offset_neighbors(neighbors, v) {
+                for &w in &neighbors[v] {
                     if *d.get(w) < 0 {
                         q.push(w);
 
@@ -79,19 +82,13 @@ impl BetweennessCalculator {
             }
         }
 
-        let offset = neighbors.offset();
+        let offset = neighbors.offset() as i64;
         self.writer.serialize(("node_id", "betweenness")).unwrap();
-        for s in 0..node_count {
+        for s in min_node..=max_node {
             let node_id = s - offset;
             self.writer.serialize((node_id, c_list[s])).unwrap();
         }
 
         progress_bar.set(node_count as u64);
-    }
-
-    fn get_offset_neighbors(&self, neighbors: &OffsetList<HashSet<i64>>, node_id: usize) -> Vec<usize> {
-        neighbors[node_id].iter()
-            .map(|&i| i.unsigned_abs() as usize)
-            .collect()
     }
 }

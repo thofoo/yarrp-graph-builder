@@ -3,6 +3,7 @@ use log::info;
 use crate::common::structs::data::MaxNodeIds;
 use crate::graph::betweenness::BetweennessCalculator;
 use crate::graph::graph::Graph;
+use crate::graph::kpath_centrality::KpathCentralityCalculator;
 use crate::GraphBuilderParameters;
 
 pub struct Grapher {
@@ -38,7 +39,10 @@ impl Grapher {
         let mut graph = Graph::new(max_node_ids);
         graph.parse(edges_path);
 
-        let mut calculator = BetweennessCalculator::new(graph, xe_betweenness_writer);
+        // let mut calculator = BetweennessCalculator::new(graph, xe_betweenness_writer);
+        // calculator.write_values_to_disk();
+
+        let mut calculator = KpathCentralityCalculator::new(graph, xe_betweenness_writer);
         calculator.write_values_to_disk();
     }
 }

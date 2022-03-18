@@ -10,7 +10,7 @@ pub struct Graph {
 impl Graph {
     pub fn new(max_node_ids: MaxNodeIds) -> Graph {
         Graph {
-            edges: OffsetList::new(HashSet::<i64>::new(), max_node_ids.known, max_node_ids.unknown),
+            edges: OffsetList::new(HashSet::<i64>::new(), max_node_ids),
         }
     }
 
@@ -21,7 +21,7 @@ impl Graph {
             .take_while(|edge| edge.is_ok())
             .for_each(|edge: Result<CsvEdge, _>| {
                 let data = edge.unwrap();
-                let data_from = data.from.unsigned_abs() as usize;
+                let data_from = data.from;
                 self.edges[data_from].insert(data.to);
             });
     }
