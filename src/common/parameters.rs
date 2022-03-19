@@ -14,7 +14,7 @@ pub struct OutputPaths {
     mapping: PathBuf,
     edges: PathBuf,
     max_node_ids: PathBuf,
-    xe_betweenness: PathBuf,
+    betweenness: PathBuf,
 }
 
 impl OutputPaths {
@@ -27,8 +27,8 @@ impl OutputPaths {
     pub fn max_node_ids(&self) -> &PathBuf {
         &self.max_node_ids
     }
-    pub fn xe_betweenness(&self) -> &PathBuf {
-        &self.xe_betweenness
+    pub fn betweenness(&self) -> &PathBuf {
+        &self.betweenness
     }
 }
 
@@ -100,7 +100,7 @@ impl GraphBuilderParameters {
             mapping: output_path.to_path_buf().join(Path::new("mapping.csv")),
             edges: output_path.to_path_buf().join(Path::new("edges.csv")),
             max_node_ids: output_path.to_path_buf().join(Path::new("max_node_ids.csv")),
-            xe_betweenness: output_path.to_path_buf().join(Path::new("xe_betweenness.csv")),
+            betweenness: output_path.to_path_buf().join(Path::new("betweenness.csv")),
         };
 
         GraphBuilderParameters {

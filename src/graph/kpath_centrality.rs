@@ -29,17 +29,16 @@ impl KpathCentralityCalculator {
 
         info!("Processing {} nodes...", node_count);
 
-        let boundaries = self.graph.edges().max_node_ids();
+        let boundaries = self.graph.edges().node_boundaries();
         let mut rng = rand::thread_rng();
 
-        let min_node = -(boundaries.unknown as i64);
-        let max_node = boundaries.known as i64;
-
-        let node_sampler = Uniform::new_inclusive(min_node, max_node);
+        let node_sampler = Uniform::new_inclusive(
+            boundaries.min_node(), boundaries.max_node()
+        );
         let k_sampler = Uniform::new(1, k + 1);
 
-        let mut count_list: OffsetList<u32> = OffsetList::new_same_size_as(0, neighbors);
-        let mut explored: OffsetList<bool> = OffsetList::new_same_size_as(false, neighbors);
+        let mut count_list: OffsetList<u32> = OffsetList::new(0, boundaries.clone());
+        let mut explored: OffsetList<bool> = OffsetList::new(false, boundaries.clone());
 
         let t_raw = 2 as f64 * k.pow(2) as f64 * (node_count as i32).pow(1 - double_alpha) as f64 * (node_count as f64).ln();
         let t_floor: u64 = t_raw.floor() as u64;
@@ -66,13 +65,13 @@ impl KpathCentralityCalculator {
                 j += 1;
             }
 
-            explored = OffsetList::new_same_size_as(false, neighbors);
+            explored = OffsetList::new(false, boundaries.clone());
             progress_bar.inc();
         }
 
         self.writer.serialize(("node_id", "kpc")).unwrap();
         let kn: f64 = (k as i64 * node_count as i64) as f64;
-        for v in min_node..=max_node {
+        for v in boundaries.range_inclusive() {
             let value = kn * (count_list[v] as f64 / t_raw);
             self.writer.serialize((v, value)).unwrap();
         }

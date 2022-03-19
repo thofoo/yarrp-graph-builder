@@ -26,12 +26,10 @@ impl BetweennessCalculator {
         let mut progress_bar = ProgressBar::new(node_count as u64);
         progress_bar.set(0);
 
-        let boundaries = self.graph.edges().max_node_ids();
-        let min_node = -(boundaries.unknown as i64);
-        let max_node = boundaries.known as i64;
+        let boundaries = self.graph.edges().node_boundaries();
 
-        let mut c_list: OffsetList<f64> = OffsetList::new_same_size_as(0.0, neighbors);
-        for s in min_node..=max_node {
+        let mut c_list: OffsetList<f64> = OffsetList::new(0.0, boundaries.clone());
+        for s in boundaries.range_inclusive() {
             progress_bar.set(s as u64);
 
             let memory = BetweennessMemory::new();
@@ -82,11 +80,9 @@ impl BetweennessCalculator {
             }
         }
 
-        let offset = neighbors.offset() as i64;
         self.writer.serialize(("node_id", "betweenness")).unwrap();
-        for s in min_node..=max_node {
-            let node_id = s - offset;
-            self.writer.serialize((node_id, c_list[s])).unwrap();
+        for s in boundaries.range_inclusive() {
+            self.writer.serialize((s, c_list[s])).unwrap();
         }
 
         progress_bar.set(node_count as u64);

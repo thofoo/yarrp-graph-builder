@@ -1,45 +1,35 @@
 use std::ops::{Index, IndexMut};
-use crate::common::structs::data::MaxNodeIds;
+use crate::common::structs::data::NodeBoundaries;
 
 pub struct OffsetList<T> {
     vec: Vec<T>,
     offset: usize,
     total_nodes: usize,
-    max_node_ids: MaxNodeIds,
+    node_boundaries: NodeBoundaries,
 }
 
 impl <T: Clone> OffsetList<T> {
-    pub fn new(default: T, max_node_ids: MaxNodeIds) -> OffsetList<T> {
-        let positive_size = max_node_ids.known + 1;
-        let negative_size = max_node_ids.unknown; // no +1 because no "0 node"
+    pub fn new(default: T, boundaries: NodeBoundaries) -> OffsetList<T> {
+        // let positive_size = max_node_ids.known + 1;
+        // let negative_size = max_node_ids.unknown; // no +1 because no "0 node"
+
+        let positive_size = (boundaries.max_node() + 1) as usize;
+        let negative_size = -boundaries.min_node() as usize;
         let size = positive_size + negative_size;
 
         OffsetList {
             vec: vec![default; size],
             offset: negative_size,
             total_nodes: size,
-            max_node_ids,
+            node_boundaries: boundaries,
         }
     }
 
-    pub fn new_same_size_as<DontCare>(default: T, list: &OffsetList<DontCare>) -> OffsetList<T> {
-        OffsetList::new(
-            default,
-            MaxNodeIds {
-                known: list.total_nodes - list.offset - 1,
-                unknown: list.offset,
-            },
-        )
-    }
-
-    pub fn offset(&self) -> usize {
-        self.offset
-    }
     pub fn total_nodes(&self) -> usize {
         self.total_nodes
     }
-    pub fn max_node_ids(&self) -> &MaxNodeIds {
-        &self.max_node_ids
+    pub fn node_boundaries(&self) -> &NodeBoundaries {
+        &self.node_boundaries
     }
 }
 
