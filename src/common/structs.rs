@@ -66,5 +66,8 @@ pub mod data {
         pub fn max_node(&self) -> i64 {
             self.max_node
         }
+        pub fn offset(&self) -> i64 {
+            self.min_node.abs()
+        }
     }
 }

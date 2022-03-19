@@ -6,8 +6,8 @@ use pbr::ProgressBar;
 use rand::distributions::Uniform;
 use rand::seq::SliceRandom;
 use rand::distributions::Distribution;
-use crate::graph::graph::Graph;
-use crate::graph::offset_list::OffsetList;
+use crate::graph::common::graph::Graph;
+use crate::graph::common::offset_list::OffsetList;
 
 pub struct KpathCentralityCalculator {
     graph: Graph,

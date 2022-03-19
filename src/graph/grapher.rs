@@ -1,10 +1,10 @@
 use log::info;
 
 use crate::common::structs::data::MaxNodeIds;
-use crate::graph::bcd::BcdCalculator;
-use crate::graph::betweenness::BetweennessCalculator;
-use crate::graph::graph::Graph;
-use crate::graph::kpath_centrality::KpathCentralityCalculator;
+use crate::graph::bcd::bcd::BcdCalculator;
+use crate::graph::brandes::betweenness::BetweennessCalculator;
+use crate::graph::kpath::kpath_centrality::KpathCentralityCalculator;
+use crate::graph::common::graph::Graph;
 use crate::GraphBuilderParameters;
 
 pub struct Grapher {

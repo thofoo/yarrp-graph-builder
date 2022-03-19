@@ -3,10 +3,9 @@ use std::fs::File;
 use csv::Writer;
 use log::info;
 use pbr::ProgressBar;
-use crate::graph::betweenness_memory::BetweennessMemory;
-
-use crate::graph::graph::Graph;
-use crate::graph::offset_list::OffsetList;
+use crate::graph::brandes::betweenness_memory::BetweennessMemory;
+use crate::graph::common::graph::Graph;
+use crate::graph::common::offset_list::OffsetList;
 
 pub struct BetweennessCalculator {
     graph: Graph,

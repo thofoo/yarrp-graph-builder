@@ -1,5 +1,5 @@
-use crate::graph::collection_wrappers::{Queue, Stack};
-use crate::graph::sparse_offset_list::SpareOffsetList;
+use crate::graph::common::collection_wrappers::{Queue, Stack};
+use crate::graph::common::sparse_offset_list::SpareOffsetList;
 
 pub struct BetweennessMemory {
     pub s_stack: Stack<i64>,

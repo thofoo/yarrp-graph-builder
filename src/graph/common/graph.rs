@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 use std::path::PathBuf;
 use crate::common::structs::data::{CsvEdge, MaxNodeIds, NodeBoundaries};
-use crate::graph::offset_list::OffsetList;
+use crate::graph::common::offset_list::OffsetList;
 
 pub struct Graph {
     edges: OffsetList<HashSet<i64>>
