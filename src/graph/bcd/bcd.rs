@@ -6,6 +6,7 @@ use log::info;
 use pbr::ProgressBar;
 use rand::rngs::ThreadRng;
 use rand::seq::SliceRandom;
+use crate::graph::common::collection_wrappers::Stack;
 
 use crate::graph::common::graph::Graph;
 
@@ -44,7 +45,7 @@ impl BcdCalculator {
             let value = self.compute_value(s);
             self.writer.serialize((s, value)).unwrap();
 
-            if (s + offset) % 100000 == 0 {
+            if (s + offset) % 1000 == 0 {
                 progress_bar.set((s + offset).unsigned_abs());
             }
         }
@@ -63,10 +64,24 @@ impl BcdCalculator {
     }
 
     fn compute_rv(&self, node: i64) -> Vec<i64> {
-        let rv: HashSet<i64> = HashSet::new();
-        // TODO 1. compute reverse graph (in-place?)
-        // TODO 2.1 BFS/DFS on reverse graph, starting from r
-        // TODO 2.2 add all visited nodes to result_set
+        let mut rv: HashSet<i64> = HashSet::new();
+
+        let reverse = self.graph.reverse_edges();
+        let mut node_stack: Stack<i64> = Stack::new();
+        node_stack.push(node);
+
+        while !node_stack.is_empty() {
+            let n = node_stack.upop();
+            for &m in &reverse[n] {
+                if !rv.contains(&m) {
+                    node_stack.push(m);
+                    rv.insert(m);
+                }
+            }
+        }
+
+        rv.remove(&node);
+
         rv.iter().map(|&i| i).collect()
     }
 

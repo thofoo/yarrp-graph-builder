@@ -10,9 +10,6 @@ pub struct OffsetList<T> {
 
 impl <T: Clone> OffsetList<T> {
     pub fn new(default: T, boundaries: NodeBoundaries) -> OffsetList<T> {
-        // let positive_size = max_node_ids.known + 1;
-        // let negative_size = max_node_ids.unknown; // no +1 because no "0 node"
-
         let positive_size = (boundaries.max_node() + 1) as usize;
         let negative_size = -boundaries.min_node() as usize;
         let size = positive_size + negative_size;
