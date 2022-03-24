@@ -26,10 +26,10 @@ fn main() {
 
     // TODO get from cmd line args
     let config = GraphBuilderParameters::new(
-        IpType::V4,
-        "../../01_yarrp_scan/input/v4",
-        "../../01_yarrp_scan/output/v4/intermediate",
-        "../../01_yarrp_scan/output/v4",
+        IpType::V6,
+        "../../01_yarrp_scan/input/v6",
+        "../../01_yarrp_scan/output/v6/intermediate",
+        "../../01_yarrp_scan/output/v6",
         /* should_preprocess: */ false,
         /* should_merge: */ false,
         /* should_persist_index: */ false,

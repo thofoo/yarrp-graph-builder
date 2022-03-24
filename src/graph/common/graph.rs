@@ -2,7 +2,9 @@ use std::collections::HashSet;
 use std::path::PathBuf;
 use lazy_init::Lazy;
 use crate::common::structs::data::{CsvEdge, MaxNodeIds, NodeBoundaries};
+use crate::graph::common::collection_wrappers::Queue;
 use crate::graph::common::offset_list::OffsetList;
+use crate::graph::common::sparse_offset_list::SparseOffsetList;
 
 pub struct Graph {
     edges: OffsetList<HashSet<i64>>,
@@ -56,5 +58,29 @@ impl Graph {
         }
 
         reversed
+    }
+
+    pub fn calculate_shortest_path_dag(&self, root: i64) -> SparseOffsetList<HashSet<i64>> {
+        let mut spd: SparseOffsetList<HashSet<i64>> = SparseOffsetList::new(HashSet::new());
+
+        let mut node_queue: Queue<i64> = Queue::new();
+        node_queue.push(root);
+
+        let mut already_queued_nodes: HashSet<i64> = HashSet::new();
+
+        while !node_queue.is_empty() {
+            let n = node_queue.upoll();
+
+            let successors = &self.edges[n];
+            for &successor in successors {
+                if !spd.has(successor) && !already_queued_nodes.contains(&successor) {
+                    spd.get_mut(n).insert(successor);
+                    node_queue.push(successor);
+                    already_queued_nodes.insert(successor);
+                }
+            }
+        }
+
+        spd
     }
 }

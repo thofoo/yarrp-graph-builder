@@ -1,5 +1,10 @@
 use std::collections::VecDeque;
 
+pub trait GettableList<T> {
+    fn get(&self, index: i64) -> &T;
+    fn get_mut(&mut self, index: i64) -> &mut T;
+}
+
 pub struct Stack<T> {
     stack: Vec<T>,
 }

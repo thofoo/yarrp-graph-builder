@@ -40,12 +40,16 @@ impl Grapher {
         let mut graph = Graph::new(max_node_ids);
         graph.parse(edges_path);
 
-        let mut calculator = BcdCalculator::new(graph, betweenness_writer);
+        // on 1 file of V4:
+        // RUST_BACKTRACE=1 ./target/release/yarrp-graph-builder  77.35s user 0.95s system 99% cpu 1:18.31 total
+        // on 4 files of V6:
+        // RUST_BACKTRACE=1 ./target/release/yarrp-graph-builder  3709.02s user 164.09s system 98% cpu 1:05:20.81 total
+        let mut calculator = BetweennessCalculator::new(graph, betweenness_writer);
         calculator.write_values_to_disk();
 
         return;
 
-        let mut calculator = BetweennessCalculator::new(graph, betweenness_writer);
+        let mut calculator = BcdCalculator::new(graph, betweenness_writer);
         calculator.write_values_to_disk();
 
         let mut calculator = KpathCentralityCalculator::new(graph, betweenness_writer);

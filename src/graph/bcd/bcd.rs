@@ -6,9 +6,11 @@ use log::info;
 use pbr::ProgressBar;
 use rand::rngs::ThreadRng;
 use rand::seq::SliceRandom;
+use crate::graph::brandes::betweenness::BetweennessCalculator;
 use crate::graph::common::collection_wrappers::Stack;
 
 use crate::graph::common::graph::Graph;
+use crate::graph::common::sparse_offset_list::SparseOffsetList;
 
 pub struct BcdCalculator {
     graph: Graph,
@@ -45,7 +47,7 @@ impl BcdCalculator {
             let value = self.compute_value(s);
             self.writer.serialize((s, value)).unwrap();
 
-            if (s + offset) % 1000 == 0 {
+            if (s + offset) % 1 == 0 {
                 progress_bar.set((s + offset).unsigned_abs());
             }
         }
@@ -107,8 +109,18 @@ impl BcdCalculator {
     }
 
     fn compute_delta_vt(&self, node: i64, spd_root: i64) -> f64 {
-        // TODO Form the SPD rooted at spd_root and compute
-        // TODO dependency scores of vt on the other vertices.
-        0.0
+        let mut spd = self.graph.calculate_shortest_path_dag(spd_root);
+        self.compute_delta(&mut spd, node)
+    }
+
+    fn compute_delta(&self, spd: &mut SparseOffsetList<HashSet<i64>>, target: i64) -> f64 {
+        let mut c_list: SparseOffsetList<f64> = SparseOffsetList::new(0.0);
+
+        let keys: Vec<i64> = spd.keys();
+        for key in keys {
+            BetweennessCalculator::calculate_delta_for_node(spd, &mut c_list, key);
+        }
+
+        *c_list.get(target)
     }
 }
