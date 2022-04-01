@@ -42,6 +42,8 @@ impl Grapher {
 
         // on 1 file of V4:
         // RUST_BACKTRACE=1 ./target/release/yarrp-graph-builder  77.35s user 0.95s system 99% cpu 1:18.31 total
+        // on all of V4 (12671145 nodes) (i am negatively surprised):
+        // RUST_BACKTRACE=1 ./target/release/yarrp-graph-builder  16984.65s user 162.81s system 99% cpu 4:46:18.79 total
         // on 4 files of V6:
         // RUST_BACKTRACE=1 ./target/release/yarrp-graph-builder  3709.02s user 164.09s system 98% cpu 1:05:20.81 total
         let mut calculator = BetweennessCalculator::new(graph, betweenness_writer);

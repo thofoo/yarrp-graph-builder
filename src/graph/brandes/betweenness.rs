@@ -3,11 +3,13 @@ use std::fs::File;
 
 use csv::Writer;
 use log::info;
-use pbr::ProgressBar;
+use rayon::prelude::*;
+
 use crate::graph::brandes::betweenness_memory::BetweennessMemory;
 use crate::graph::common::collection_wrappers::GettableList;
 use crate::graph::common::graph::Graph;
 use crate::graph::common::offset_list::OffsetList;
+use crate::graph::common::sparse_offset_list::SparseOffsetList;
 
 pub struct BetweennessCalculator {
     graph: Graph,
@@ -20,30 +22,46 @@ impl BetweennessCalculator {
     }
 
     pub fn write_values_to_disk(&mut self) {
-        let neighbors = self.graph.edges();
-        let node_count = neighbors.total_nodes();
-
-        info!("Processing {} nodes...", node_count);
-        let mut progress_bar = ProgressBar::new(node_count as u64);
-        progress_bar.set(0);
+        let c_list = &self.compute_betweenness_in_parallel();
 
         let boundaries = self.graph.edges().node_boundaries();
-
-        let offset = neighbors.offset();
-
-        let mut c_list: OffsetList<f64> = OffsetList::new(0.0, boundaries.clone());
-        for s in boundaries.range_inclusive() {
-            progress_bar.set((s + offset as i64) as u64);
-
-            Self::calculate_delta_for_node(neighbors, &mut c_list, s)
-        }
 
         self.writer.serialize(("node_id", "betweenness")).unwrap();
         for s in boundaries.range_inclusive() {
             self.writer.serialize((s, c_list[s])).unwrap();
         }
+    }
 
-        progress_bar.set(node_count as u64);
+    fn compute_betweenness_in_parallel(
+        &self,
+    ) -> OffsetList<f64> {
+        let edges = self.graph.edges();
+
+        let node_count = edges.total_nodes();
+        info!("Processing {} nodes...", node_count);
+
+        let boundaries = self.graph.edges().node_boundaries();
+        let mut partial_results: Vec<SparseOffsetList<f64>> = Vec::new();
+
+        boundaries.range_inclusive_chopped(10)
+            .into_par_iter()
+            .map(|range| {
+                let mut local_c_list = SparseOffsetList::new(0.0);
+                for s in range {
+                    Self::calculate_delta_for_node(edges, &mut local_c_list, s);
+                }
+                local_c_list
+            })
+            .collect_into_vec(&mut partial_results);
+
+        let mut global_c_list: OffsetList<f64> = OffsetList::new(0.0, boundaries.clone());
+        for result in partial_results {
+            for (&node, &value) in result.iter() {
+                global_c_list[node] += value;
+            }
+        }
+
+        global_c_list
     }
 
     pub fn calculate_delta_for_node(

@@ -10,6 +10,7 @@ pub mod util {
 
 pub mod data {
     use std::ops::RangeInclusive;
+    use math::round::ceil;
     use serde::Serialize;
     use serde::Deserialize;
 
@@ -59,6 +60,25 @@ pub mod data {
 
         pub fn range_inclusive(&self) -> RangeInclusive<i64> {
             self.min_node..=self.max_node
+        }
+        pub fn range_inclusive_chopped(&self, pieces: u16) -> Vec<RangeInclusive<i64>> {
+            let mut result = Vec::new();
+            let node_count = self.max_node + self.offset() + 1;
+            let single_range_size = ceil((node_count as f64) / (pieces as f64), 0) as i64;
+
+            let mut min = self.min_node;
+
+            for _ in 0..pieces {
+                let max = if min + single_range_size <= self.max_node {
+                    min + single_range_size
+                } else {
+                    self.max_node
+                };
+                result.push(min..=max);
+                min = max + 1;
+            }
+
+            result
         }
         pub fn min_node(&self) -> i64 {
             self.min_node

@@ -1,4 +1,4 @@
-use std::collections::hash_map::Keys;
+use std::collections::hash_map::Iter;
 use std::collections::HashMap;
 use crate::graph::common::collection_wrappers::GettableList;
 
@@ -46,6 +46,10 @@ impl <T: Clone> SparseOffsetList<T> {
         let mapped_keys: Vec<i64> = keys.map(|i| *i).collect();
 
         mapped_keys
+    }
+
+    pub fn iter(&self) -> Iter<'_, i64, T> {
+        self.map.iter()
     }
 }
 
