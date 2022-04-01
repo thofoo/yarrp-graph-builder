@@ -61,7 +61,7 @@ pub mod data {
         pub fn range_inclusive(&self) -> RangeInclusive<i64> {
             self.min_node..=self.max_node
         }
-        pub fn range_inclusive_chopped(&self, pieces: u16) -> Vec<RangeInclusive<i64>> {
+        pub fn range_inclusive_chopped(&self, pieces: u16) -> Vec<(usize, RangeInclusive<i64>)> {
             let mut result = Vec::new();
             let node_count = self.max_node + self.offset() + 1;
             let single_range_size = ceil((node_count as f64) / (pieces as f64), 0) as i64;
@@ -74,7 +74,8 @@ pub mod data {
                 } else {
                     self.max_node
                 };
-                result.push(min..=max);
+                let range_size = (max - min + 1) as usize;
+                result.push((range_size, min..=max));
                 min = max + 1;
             }
 

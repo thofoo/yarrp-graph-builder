@@ -1,7 +1,9 @@
 use std::collections::HashSet;
 use std::fs::File;
+use std::sync::Mutex;
 
 use csv::Writer;
+use linya::{Bar, Progress};
 use log::info;
 use rayon::prelude::*;
 
@@ -43,13 +45,23 @@ impl BetweennessCalculator {
         let boundaries = self.graph.edges().node_boundaries();
         let mut partial_results: Vec<SparseOffsetList<f64>> = Vec::new();
 
-        boundaries.range_inclusive_chopped(10)
+        let progress = Mutex::new(Progress::new());
+
+        boundaries.range_inclusive_chopped(100)
             .into_par_iter()
-            .map(|range| {
+            .map(|(size, range)| {
+                let bar: Bar = progress.lock().unwrap().bar(size, format!("Calculating betweenness for {:?}", range));
                 let mut local_c_list = SparseOffsetList::new(0.0);
+
+                let mut counter = 0;
                 for s in range {
                     Self::calculate_delta_for_node(edges, &mut local_c_list, s);
+                    counter += 1;
+                    if counter % 10000 == 0 {
+                        progress.lock().unwrap().inc_and_draw(&bar, 10000);
+                    }
                 }
+                progress.lock().unwrap().set_and_draw(&bar, size);
                 local_c_list
             })
             .collect_into_vec(&mut partial_results);
