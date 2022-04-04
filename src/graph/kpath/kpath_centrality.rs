@@ -9,11 +9,13 @@ use rand::distributions::Distribution;
 use crate::graph::common::graph::Graph;
 use crate::graph::common::offset_list::OffsetList;
 
+#[allow(dead_code)]
 pub struct KpathCentralityCalculator {
     graph: Graph,
     writer: Writer<File>,
 }
 
+#[allow(dead_code)]
 impl KpathCentralityCalculator {
     pub fn new(graph: Graph, writer: Writer<File>) -> KpathCentralityCalculator {
         KpathCentralityCalculator { graph, writer }

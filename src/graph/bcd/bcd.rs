@@ -12,6 +12,7 @@ use crate::graph::common::collection_wrappers::Stack;
 use crate::graph::common::graph::Graph;
 use crate::graph::common::sparse_offset_list::SparseOffsetList;
 
+#[allow(dead_code)]
 pub struct BcdCalculator {
     graph: Graph,
     writer: Writer<File>,
@@ -19,6 +20,7 @@ pub struct BcdCalculator {
     rng: ThreadRng,
 }
 
+#[allow(dead_code)]
 impl BcdCalculator {
     pub fn new(graph: Graph, writer: Writer<File>) -> BcdCalculator {
         let rng = rand::thread_rng();

@@ -5,6 +5,7 @@ use std::sync::Mutex;
 use csv::Writer;
 use linya::{Bar, Progress};
 use log::info;
+use pbr::ProgressBar;
 use rayon::prelude::*;
 
 use crate::graph::brandes::betweenness_memory::BetweennessMemory;
@@ -66,12 +67,16 @@ impl BetweennessCalculator {
             })
             .collect_into_vec(&mut partial_results);
 
+        let result_count = partial_results.len() as u64;
+        let mut progress_bar = ProgressBar::new(result_count);
         let mut global_c_list: OffsetList<f64> = OffsetList::new(0.0, boundaries.clone());
         for result in partial_results {
             for (&node, &value) in result.iter() {
                 global_c_list[node] += value;
             }
+            progress_bar.inc();
         }
+        progress_bar.set(result_count);
 
         global_c_list
     }
