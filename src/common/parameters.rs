@@ -34,6 +34,7 @@ impl OutputPaths {
 
 #[derive(Clone)]
 pub struct GraphBuilderParameters {
+    read_compressed: bool,
     address_type: IpType,
     input_path: PathBuf,
     intermediary_file_path_original: PathBuf,
@@ -49,6 +50,7 @@ pub struct GraphBuilderParameters {
 
 impl GraphBuilderParameters {
     pub fn new(
+        read_compressed: bool,
         address_type: IpType,
         input_folder: &str,
         intermediate_folder: &str,
@@ -104,6 +106,7 @@ impl GraphBuilderParameters {
         };
 
         GraphBuilderParameters {
+            read_compressed,
             address_type,
             input_path,
             intermediary_file_path_original: intermediary_file_path.to_path_buf(),
@@ -124,6 +127,9 @@ impl GraphBuilderParameters {
         fs::create_dir_all(&self.intermediary_file_path).unwrap();
     }
 
+    pub fn read_compressed(&self) -> bool {
+        self.read_compressed
+    }
     pub fn address_type(&self) -> &IpType {
         &self.address_type
     }

@@ -4,7 +4,7 @@ use std::path::PathBuf;
 
 use serde::{Deserialize, Serialize};
 use crate::common::structs::data::InternalNode;
-use crate::preprocess::write_util;
+use crate::preprocess::file_util;
 
 #[derive(Serialize)]
 #[derive(Deserialize)]
@@ -48,7 +48,7 @@ impl GraphBucket {
 
     pub fn evict_to_disk(&mut self) {
         let path = &self.file_path;
-        write_util::write_to_file(path, &self.edge_map);
+        file_util::write_to_file(path, &self.edge_map);
         self.edge_map.clear();
         self.edge_map.shrink_to_fit(); // this is to make sure that the memory actually is freed
     }

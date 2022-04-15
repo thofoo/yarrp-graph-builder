@@ -3,13 +3,13 @@ use std::fs;
 use std::fs::DirEntry;
 use std::path::{Path, PathBuf};
 
-use log::{info, trace};
+use log::{debug, info, trace};
 use pbr::ProgressBar;
 use crate::buckets::bucket_manager::GraphBucketManager;
 use crate::common::parameters;
 use crate::GraphBuilderParameters;
 
-use crate::preprocess::{parser, write_util};
+use crate::preprocess::{parser, file_util};
 
 pub struct Preprocessor {
     config: GraphBuilderParameters,
@@ -32,6 +32,15 @@ impl Preprocessor {
         let files_to_process: Vec<DirEntry> = raw_files_list
             .map(|entry| entry.unwrap())
             .filter(|i| i.path().is_file())
+            .filter(|i| {
+                let path_buf = i.path().to_path_buf();
+                let path_string = path_buf.to_str().unwrap();
+                if self.config.read_compressed() {
+                    path_string.ends_with("bz2")
+                } else {
+                    !path_string.ends_with("bz2")
+                }
+            })
             .collect();
 
         let file_count = files_to_process.len() as u64;
@@ -72,9 +81,19 @@ impl Preprocessor {
     }
 
     fn read_lines(&self, path: &PathBuf) -> Vec<String> {
-        std::fs::read_to_string(path.to_str().unwrap())
-            .expect("file not found!")
-            .lines()
+        let file_name = path.to_str().unwrap();
+        let error_string = &format!("file {} not found or invalid data", file_name);
+        debug!("Reading in data for {}", file_name);
+
+        let data = if self.config.read_compressed() {
+            file_util::read_bzip2_lines(path).expect(error_string)
+        } else {
+            std::fs::read_to_string(path.to_str().unwrap()).expect(error_string)
+        };
+
+        debug!("Finished reading in data for {}.", file_name);
+
+        data.lines()
             .filter(|&s| !s.starts_with("#"))
             .map(str::to_string)
             .collect()
@@ -84,6 +103,6 @@ impl Preprocessor {
         let node_index_path = self.config.intermediary_file_path_original().join(
             Path::new(parameters::NODE_INDEX_PATH)
         );
-        write_util::write_to_file(&node_index_path, &index);
+        file_util::write_to_file(&node_index_path, &index);
     }
 }

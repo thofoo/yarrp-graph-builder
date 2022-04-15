@@ -26,14 +26,15 @@ fn main() {
 
     // TODO get from cmd line args
     let config = GraphBuilderParameters::new(
-        IpType::V4,
-        "../../01_yarrp_scan/input/v4",
-        "../../01_yarrp_scan/output/v4/intermediate",
-        "../../01_yarrp_scan/output/v4",
-        /* should_preprocess: */ false,
-        /* should_merge: */ false,
-        /* should_persist_index: */ false,
-        /* should_persist_edges: */ false,
+        /* read_compressed: */ true,
+        IpType::V6,
+        "/mnt/scans/2022_02_routingloops/01_yarrp_scan/ipv6",
+        "./2022_02_yarrp_graph/v6/intermediate",
+        "../../01_yarrp_scan/output/v6/output",
+        /* should_preprocess: */ true,
+        /* should_merge: */ true,
+        /* should_persist_index: */ true,
+        /* should_persist_edges: */ true,
         /* should_compute_graph: */ true,
     );
 
