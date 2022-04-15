@@ -52,7 +52,11 @@ impl Preprocessor {
         let mut index: HashMap<u128, u64> = HashMap::new();
         let mut counter = 1; // 0 is reserved for the source IP
         for file in files_to_process {
-            self.config.add_intermediate_suffix(file.file_name().to_str().unwrap());
+            let path_is_new = self.config.add_intermediate_suffix(file.file_name().to_str().unwrap());
+            if !path_is_new {
+                progress_bar.inc();
+                continue
+            }
 
             let mut memory = GraphBucketManager::new(
                 &self.config,

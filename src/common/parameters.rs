@@ -120,11 +120,18 @@ impl GraphBuilderParameters {
         }
     }
 
-    pub fn add_intermediate_suffix(&mut self, suffix: &str) {
+    /**
+     * Returns true if the directory was successfully created, false if the directory already existed.
+     */
+    pub fn add_intermediate_suffix(&mut self, suffix: &str) -> bool {
         self.intermediary_file_path = self.intermediary_file_path_original.join(
             Path::new(suffix),
         );
-        fs::create_dir_all(&self.intermediary_file_path).unwrap();
+        let path_is_new = !self.intermediary_file_path.exists();
+        if path_is_new {
+            fs::create_dir_all(&self.intermediary_file_path).unwrap();
+        }
+        path_is_new
     }
 
     pub fn read_compressed(&self) -> bool {

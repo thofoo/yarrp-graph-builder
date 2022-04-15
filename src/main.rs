@@ -28,9 +28,9 @@ fn main() {
     let config = GraphBuilderParameters::new(
         /* read_compressed: */ true,
         IpType::V6,
-        "/mnt/scans/2022_02_routingloops/01_yarrp_scan/ipv6",
-        "./2022_02_yarrp_graph/v6/intermediate",
-        "../../01_yarrp_scan/output/v6/output",
+        "../../01_yarrp_scan/input/v6",
+        "../../01_yarrp_scan/output/v6/intermediate",
+        "../../01_yarrp_scan/output/v6",
         /* should_preprocess: */ true,
         /* should_merge: */ true,
         /* should_persist_index: */ true,
