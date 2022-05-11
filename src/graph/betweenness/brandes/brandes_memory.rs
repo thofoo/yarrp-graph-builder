@@ -1,7 +1,7 @@
 use crate::graph::common::collection_wrappers::{Queue, Stack};
 use crate::graph::common::sparse_offset_list::SparseOffsetList;
 
-pub struct BetweennessMemory {
+pub struct BrandesMemory {
     pub s_stack: Stack<i64>,
     pub p_list: SparseOffsetList<Vec<i64>>,
     pub sigma: SparseOffsetList<u64>,
@@ -13,9 +13,9 @@ pub struct BetweennessMemory {
     _init_gate: bool,
 }
 
-impl BetweennessMemory {
-    pub fn new() -> BetweennessMemory {
-        BetweennessMemory {
+impl BrandesMemory {
+    pub fn new() -> BrandesMemory {
+        BrandesMemory {
             s_stack: Stack::new(),
             p_list: SparseOffsetList::new(Vec::<i64>::new()),
             sigma: SparseOffsetList::new(0),

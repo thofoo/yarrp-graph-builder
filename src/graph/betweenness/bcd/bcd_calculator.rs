@@ -6,13 +6,13 @@ use log::info;
 use pbr::ProgressBar;
 use rand::rngs::ThreadRng;
 use rand::seq::SliceRandom;
-use crate::graph::brandes::betweenness::BetweennessCalculator;
+use crate::graph::betweenness::BetweennessCalculatorMethod;
+use crate::graph::betweenness::brandes::brandes_calculator::BrandesCalculator;
 use crate::graph::common::collection_wrappers::Stack;
 
 use crate::graph::common::graph::Graph;
 use crate::graph::common::sparse_offset_list::SparseOffsetList;
 
-#[allow(dead_code)]
 pub struct BcdCalculator {
     graph: Graph,
     writer: Writer<File>,
@@ -20,7 +20,6 @@ pub struct BcdCalculator {
     rng: ThreadRng,
 }
 
-#[allow(dead_code)]
 impl BcdCalculator {
     pub fn new(graph: Graph, writer: Writer<File>) -> BcdCalculator {
         let rng = rand::thread_rng();
@@ -33,7 +32,7 @@ impl BcdCalculator {
         }
     }
 
-    pub fn write_values_to_disk(&mut self) {
+    fn calculate_and_persist(&mut self) {
         let neighbors = self.graph.edges();
         let node_count = neighbors.total_nodes();
 
@@ -120,9 +119,15 @@ impl BcdCalculator {
 
         let keys: Vec<i64> = spd.keys();
         for key in keys {
-            BetweennessCalculator::calculate_delta_for_node(spd, &mut c_list, key);
+            BrandesCalculator::calculate_delta_for_node(spd, &mut c_list, key);
         }
 
         *c_list.get(target)
+    }
+}
+
+impl BetweennessCalculatorMethod for BcdCalculator {
+    fn calculate_and_write_to_disk(&mut self) {
+        self.calculate_and_persist();
     }
 }

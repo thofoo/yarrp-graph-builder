@@ -1,7 +1,8 @@
 use log::info;
 
 use crate::common::structs::data::MaxNodeIds;
-use crate::graph::brandes::betweenness::BetweennessCalculator;
+use crate::graph::betweenness::betweenness_methods::BetweennessMethod;
+use crate::graph::betweenness::BetweennessCalculator;
 use crate::graph::common::graph::Graph;
 use crate::GraphBuilderParameters;
 
@@ -14,17 +15,19 @@ impl Grapher {
         Grapher { config: config.clone() }
     }
 
-    pub fn collect_graph_stats(self) {
+    pub fn collect_graph_stats(&self) {
         if !self.config.should_compute_graph() {
             info!("Graph computation flag is FALSE - skipping graph computation.");
             return;
         }
 
-        let betweenness_writer = csv::Writer::from_path(&self.config.output_paths().betweenness())
-            .expect(&format!(
-                "Could not create file for storing betweenness at {}",
-                &self.config.output_paths().betweenness().to_str().unwrap()
-            ));
+        let graph = self.build_graph();
+        self.calculate_graph_parameters(graph);
+    }
+
+    fn build_graph(&self) -> Graph {
+        info!("Building in-memory graph for calculating graph values. This may take a while \
+        but only has to be done per run.");
 
         let edges_path = self.config.output_paths().edges();
         let max_node_id_path = self.config.output_paths().max_node_ids();
@@ -37,16 +40,25 @@ impl Grapher {
 
         let mut graph = Graph::new(max_node_ids);
         graph.parse(edges_path);
+        graph
+    }
 
-        // on 1 file of V4:
-        // RUST_BACKTRACE=1 ./target/release/yarrp-graph-builder  77.35s user 0.95s system 99% cpu 1:18.31 total
-        // on all of V4 (12671145 nodes) (i am negatively surprised):
-        // RUST_BACKTRACE=1 ./target/release/yarrp-graph-builder  16984.65s user 162.81s system 99% cpu 4:46:18.79 total
-        // on all of V4 (12671145 nodes) but with 100 threads:
-        // RUST_BACKTRACE=1 ./target/release/yarrp-graph-builder  34934.46s user 231.00s system 496% cpu 1:58:00.21 total
-        // on 4 files of V6:
-        // RUST_BACKTRACE=1 ./target/release/yarrp-graph-builder  3709.02s user 164.09s system 98% cpu 1:05:20.81 total
-        let mut calculator = BetweennessCalculator::new(graph, betweenness_writer);
-        calculator.write_values_to_disk();
+    fn calculate_graph_parameters(&self, graph: Graph) {
+        self.calculate_betweenness(graph);
+        // TODO add more parameter types here
+    }
+
+    fn calculate_betweenness(&self, graph: Graph) {
+        let method = BetweennessMethod::BrandesApprox;
+        info!("Calculating BETWEENNESS CENTRALITY using {:?}", method);
+
+        let betweenness_writer = csv::Writer::from_path(&self.config.output_paths().betweenness())
+            .expect(&format!(
+                "Could not create file for storing betweenness at {}",
+                &self.config.output_paths().betweenness().to_str().unwrap()
+            ));
+
+        BetweennessCalculator::new(BetweennessMethod::BrandesApprox)
+            .calculate(graph, betweenness_writer);
     }
 }

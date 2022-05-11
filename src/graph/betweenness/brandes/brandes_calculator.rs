@@ -7,24 +7,25 @@ use linya::{Bar, Progress};
 use log::info;
 use pbr::ProgressBar;
 use rayon::prelude::*;
+use crate::graph::betweenness::BetweennessCalculatorMethod;
 
-use crate::graph::brandes::betweenness_memory::BetweennessMemory;
+use crate::graph::betweenness::brandes::brandes_memory::BrandesMemory;
 use crate::graph::common::collection_wrappers::GettableList;
 use crate::graph::common::graph::Graph;
 use crate::graph::common::offset_list::OffsetList;
 use crate::graph::common::sparse_offset_list::SparseOffsetList;
 
-pub struct BetweennessCalculator {
+pub struct BrandesCalculator {
     graph: Graph,
     writer: Writer<File>,
 }
 
-impl BetweennessCalculator {
-    pub fn new(graph: Graph, writer: Writer<File>) -> BetweennessCalculator {
-        BetweennessCalculator { graph, writer }
+impl BrandesCalculator {
+    pub fn new(graph: Graph, writer: Writer<File>) -> BrandesCalculator {
+        BrandesCalculator { graph, writer }
     }
 
-    pub fn write_values_to_disk(&mut self) {
+    fn calculate_and_persist(&mut self) {
         let c_list = &self.compute_betweenness_in_parallel();
 
         let boundaries = self.graph.edges().node_boundaries();
@@ -86,7 +87,7 @@ impl BetweennessCalculator {
         c_list: &mut impl GettableList<f64>,
         s: i64
     ) {
-        let memory = BetweennessMemory::new();
+        let memory = BrandesMemory::new();
         let mut s_stack = memory.s_stack;
         let mut p_list = memory.p_list;
         let mut sigma = memory.sigma;
@@ -131,5 +132,11 @@ impl BetweennessCalculator {
                 }
             }
         }
+    }
+}
+
+impl BetweennessCalculatorMethod for BrandesCalculator {
+    fn calculate_and_write_to_disk(&mut self) {
+        self.calculate_and_persist();
     }
 }

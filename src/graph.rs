@@ -1,5 +1,3 @@
 pub mod grapher;
-mod bcd;
+mod betweenness;
 mod common;
-mod brandes;
-mod kpath;
