@@ -49,21 +49,26 @@ impl BrandesCalculator {
 
         let progress = Mutex::new(Progress::new());
 
-        boundaries.range_inclusive_chopped(100)
+        // Make sure to not use too many threads, as that could lead to out-of-memory errors if you
+        // have plenty of input data (=> the thread results are piling up before they are collected)
+        // Good baseline is to use the number of threads available on your machine
+        boundaries.divide_into_buckets(8)
             .into_par_iter()
-            .map(|(size, range)| {
-                let bar: Bar = progress.lock().unwrap().bar(size, format!("Calculating betweenness for {:?}", range));
+            .map(|immutable_bucket| {
+                let mut bucket = immutable_bucket.clone();
+
+                let bar: Bar = progress.lock().unwrap().bar(bucket.size(), format!("Calculating betweenness for {}", bucket.textual_description_of_range()));
                 let mut local_c_list = SparseOffsetList::new(0.0);
 
                 let mut counter = 0;
-                for s in range {
-                    Self::calculate_delta_for_node(edges, &mut local_c_list, s);
+                while bucket.has_next() {
+                    Self::calculate_delta_for_node(edges, &mut local_c_list, bucket.next());
                     counter += 1;
                     if counter % 10000 == 0 {
                         progress.lock().unwrap().inc_and_draw(&bar, 10000);
                     }
                 }
-                progress.lock().unwrap().set_and_draw(&bar, size);
+                progress.lock().unwrap().set_and_draw(&bar, bucket.size());
                 local_c_list
             })
             .collect_into_vec(&mut partial_results);

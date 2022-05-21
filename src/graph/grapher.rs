@@ -49,7 +49,7 @@ impl Grapher {
     }
 
     fn calculate_betweenness(&self, graph: Graph) {
-        let method = BetweennessMethod::BrandesApprox;
+        let method = BetweennessMethod::Brandes;
         info!("Calculating BETWEENNESS CENTRALITY using {:?}", method);
 
         let betweenness_writer = csv::Writer::from_path(&self.config.output_paths().betweenness())
@@ -58,7 +58,6 @@ impl Grapher {
                 &self.config.output_paths().betweenness().to_str().unwrap()
             ));
 
-        BetweennessCalculator::new(BetweennessMethod::BrandesApprox)
-            .calculate(graph, betweenness_writer);
+        BetweennessCalculator::new(method).calculate(graph, betweenness_writer);
     }
 }

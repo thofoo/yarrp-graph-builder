@@ -45,6 +45,45 @@ pub mod data {
     }
 
     #[derive(Clone)]
+    pub struct NodeBucket {
+        max_node: i64,
+        step: i64,
+        size: usize,
+
+        current_node: i64,
+    }
+
+    impl NodeBucket {
+        pub fn new(min_node: i64, max_node: i64, step: i64, size: u64) -> NodeBucket {
+            NodeBucket {
+                max_node,
+                step,
+                size: size as usize,
+                current_node: min_node
+            }
+        }
+
+        pub fn size(&self) -> usize {
+            self.size
+        }
+
+        pub fn textual_description_of_range(&self) -> String {
+            format!("{} + n * {}", self.current_node, self.step)
+        }
+
+        pub fn has_next(&self) -> bool {
+            self.current_node <= self.max_node
+        }
+
+        pub fn next(&mut self) -> i64 {
+            let next = self.current_node;
+            self.current_node += self.step;
+
+            next
+        }
+    }
+
+    #[derive(Clone)]
     pub struct NodeBoundaries {
         min_node: i64,
         max_node: i64,
@@ -58,28 +97,37 @@ pub mod data {
             }
         }
 
+        pub fn divide_into_buckets(&self, buckets: u16) -> Vec<NodeBucket> {
+            let bucket_count = buckets as i64;
+
+            let total_nodes_to_cover = (self.max_node - self.min_node + 1) as u64;
+            let regular_bucket_size = ceil(total_nodes_to_cover as f64 / bucket_count as f64, 0) as u64;
+            let last_bucket_size = if total_nodes_to_cover % regular_bucket_size == 0 {
+                regular_bucket_size
+            } else {
+                total_nodes_to_cover % regular_bucket_size
+            };
+
+            let mut result = Vec::new();
+            for bucket_index in 0..bucket_count {
+                let min = self.min_node + bucket_index;
+                let is_last_bucket = bucket_index == (bucket_count - 1);
+
+                let bucket_size = if is_last_bucket {
+                    last_bucket_size
+                } else {
+                    regular_bucket_size
+                };
+
+                result.push(
+                    NodeBucket::new(min, self.max_node, bucket_count, bucket_size)
+                );
+            }
+            result
+        }
+
         pub fn range_inclusive(&self) -> RangeInclusive<i64> {
             self.min_node..=self.max_node
-        }
-        pub fn range_inclusive_chopped(&self, pieces: u16) -> Vec<(usize, RangeInclusive<i64>)> {
-            let mut result = Vec::new();
-            let node_count = self.max_node + self.offset() + 1;
-            let single_range_size = ceil((node_count as f64) / (pieces as f64), 0) as i64;
-
-            let mut min = self.min_node;
-
-            for _ in 0..pieces {
-                let max = if min + single_range_size <= self.max_node {
-                    min + single_range_size
-                } else {
-                    self.max_node
-                };
-                let range_size = (max - min + 1) as usize;
-                result.push((range_size, min..=max));
-                min = max + 1;
-            }
-
-            result
         }
         pub fn min_node(&self) -> i64 {
             self.min_node
