@@ -207,15 +207,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "linya"
-version = "0.2.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1e90a11136022dd2ed64ee2f200af664a518049957d7277d172e2c37d2441700"
-dependencies = [
- "terminal_size",
-]
-
-[[package]]
 name = "log"
 version = "0.4.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -463,16 +454,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "terminal_size"
-version = "0.1.17"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "633c1a546cee861a1a6d0dc69ebeca693bf4296661ba7852b9d21d159e0506df"
-dependencies = [
- "libc",
- "winapi",
-]
-
-[[package]]
 name = "time"
 version = "0.1.44"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -535,7 +516,6 @@ dependencies = [
  "env_logger",
  "lazy-init",
  "libmath",
- "linya",
  "log",
  "pbr",
  "rand 0.8.5",

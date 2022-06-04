@@ -1,9 +1,7 @@
 use std::collections::HashSet;
 use std::fs::File;
-use std::sync::Mutex;
 
 use csv::Writer;
-use linya::{Bar, Progress};
 use log::info;
 use pbr::ProgressBar;
 use rayon::prelude::*;
@@ -36,9 +34,7 @@ impl BrandesCalculator {
         }
     }
 
-    fn compute_betweenness_in_parallel(
-        &self,
-    ) -> OffsetList<f64> {
+    fn compute_betweenness_in_parallel(&self) -> OffsetList<f64> {
         let edges = self.graph.edges();
 
         let node_count = edges.total_nodes();
@@ -47,28 +43,27 @@ impl BrandesCalculator {
         let boundaries = self.graph.edges().node_boundaries();
         let mut partial_results: Vec<SparseOffsetList<f64>> = Vec::new();
 
-        let progress = Mutex::new(Progress::new());
-
         // Make sure to not use too many threads, as that could lead to out-of-memory errors if you
         // have plenty of input data (=> the thread results are piling up before they are collected)
         // Good baseline is to use the number of threads available on your machine
-        boundaries.divide_into_buckets(8)
+        boundaries.divide_into_buckets(12)
             .into_par_iter()
             .map(|immutable_bucket| {
                 let mut bucket = immutable_bucket.clone();
-
-                let bar: Bar = progress.lock().unwrap().bar(bucket.size(), format!("Calculating betweenness for {}", bucket.textual_description_of_range()));
                 let mut local_c_list = SparseOffsetList::new(0.0);
-
                 let mut counter = 0;
+
+                info!("{}", bucket.textual_description_of_range());
+
                 while bucket.has_next() {
                     Self::calculate_delta_for_node(edges, &mut local_c_list, bucket.next());
                     counter += 1;
-                    if counter % 10000 == 0 {
-                        progress.lock().unwrap().inc_and_draw(&bar, 10000);
+                    if counter % 10_000_000 == 0 {
+                        println!("Thread {}: {} / {}", bucket.index(), counter, bucket.size());
                     }
                 }
-                progress.lock().unwrap().set_and_draw(&bar, bucket.size());
+
+                info!("Thread {} finished", bucket.index());
                 local_c_list
             })
             .collect_into_vec(&mut partial_results);

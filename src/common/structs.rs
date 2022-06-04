@@ -46,6 +46,7 @@ pub mod data {
 
     #[derive(Clone)]
     pub struct NodeBucket {
+        bucket_index: i64,
         max_node: i64,
         step: i64,
         size: usize,
@@ -54,8 +55,9 @@ pub mod data {
     }
 
     impl NodeBucket {
-        pub fn new(min_node: i64, max_node: i64, step: i64, size: u64) -> NodeBucket {
+        pub fn new(bucket_index: i64, min_node: i64, max_node: i64, step: i64, size: u64) -> NodeBucket {
             NodeBucket {
+                bucket_index,
                 max_node,
                 step,
                 size: size as usize,
@@ -63,18 +65,21 @@ pub mod data {
             }
         }
 
+        pub fn index(&self) -> i64 {
+            self.bucket_index
+        }
+
         pub fn size(&self) -> usize {
             self.size
         }
 
         pub fn textual_description_of_range(&self) -> String {
-            format!("{} + n * {}", self.current_node, self.step)
+            format!("Thread {}: {} + n * {}", self.bucket_index, self.current_node, self.step)
         }
 
         pub fn has_next(&self) -> bool {
             self.current_node <= self.max_node
         }
-
         pub fn next(&mut self) -> i64 {
             let next = self.current_node;
             self.current_node += self.step;
@@ -120,7 +125,7 @@ pub mod data {
                 };
 
                 result.push(
-                    NodeBucket::new(min, self.max_node, bucket_count, bucket_size)
+                    NodeBucket::new(bucket_index,min, self.max_node, bucket_count, bucket_size)
                 );
             }
             result

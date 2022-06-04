@@ -27,7 +27,7 @@ impl Grapher {
 
     fn build_graph(&self) -> Graph {
         info!("Building in-memory graph for calculating graph values. This may take a while \
-        but only has to be done per run.");
+        but only has to be done once per run.");
 
         let edges_path = self.config.output_paths().edges();
         let max_node_id_path = self.config.output_paths().max_node_ids();
