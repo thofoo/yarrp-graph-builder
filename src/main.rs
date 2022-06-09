@@ -2,7 +2,7 @@ extern crate core;
 
 use env_logger::Env;
 use log::{info, LevelFilter};
-use crate::common::parameters::GraphBuilderParameters;
+use crate::common::parameters::{GraphBuilderParameters, GraphParametersToCompute};
 use crate::common::structs::util::IpType;
 use crate::graph::grapher::Grapher;
 use crate::merge::merger::Merger;
@@ -36,6 +36,10 @@ fn main() {
         /* should_persist_index: */ true,
         /* should_persist_edges: */ true,
         /* should_compute_graph: */ true,
+        GraphParametersToCompute {
+            betweenness: false,
+            degree: true,
+        }
     );
 
     info!("Expecting to read IP{:?} addresses.", &config.address_type());

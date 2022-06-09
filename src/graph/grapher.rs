@@ -4,6 +4,7 @@ use crate::common::structs::data::MaxNodeIds;
 use crate::graph::betweenness::betweenness_methods::BetweennessMethod;
 use crate::graph::betweenness::BetweennessCalculator;
 use crate::graph::common::graph::Graph;
+use crate::graph::degree::degree_counter::DegreeCounter;
 use crate::GraphBuilderParameters;
 
 pub struct Grapher {
@@ -44,11 +45,19 @@ impl Grapher {
     }
 
     fn calculate_graph_parameters(&self, graph: Graph) {
-        self.calculate_betweenness(graph);
+        let mut graph: Graph = graph;
+
+        let should_compute = self.config.graph_parameters_to_compute();
+        if should_compute.betweenness {
+            graph = self.calculate_betweenness(graph);
+        }
+        if should_compute.degree {
+            self.calculate_degree(graph);
+        }
         // TODO add more parameter types here
     }
 
-    fn calculate_betweenness(&self, graph: Graph) {
+    fn calculate_betweenness(&self, graph: Graph) -> Graph {
         let method = BetweennessMethod::Brandes;
         info!("Calculating BETWEENNESS CENTRALITY using {:?}", method);
 
@@ -58,6 +67,20 @@ impl Grapher {
                 &self.config.output_paths().betweenness().to_str().unwrap()
             ));
 
-        BetweennessCalculator::new(method).calculate(graph, betweenness_writer);
+        BetweennessCalculator::new(method).calculate(graph, betweenness_writer)
+    }
+
+    fn calculate_degree(&self, graph: Graph) -> Graph {
+        info!("Calculating IN and OUT degree");
+
+        let degree_writer = csv::Writer::from_path(&self.config.output_paths().degree())
+            .expect(&format!(
+                "Could not create file for storing degree at {}",
+                &self.config.output_paths().degree().to_str().unwrap()
+            ));
+
+        let mut calculator = DegreeCounter::new(graph, degree_writer);
+        calculator.calculate_and_persist();
+        calculator.graph()
     }
 }

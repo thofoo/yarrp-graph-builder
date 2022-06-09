@@ -6,7 +6,6 @@ use pbr::ProgressBar;
 use rand::distributions::Uniform;
 use rand::seq::SliceRandom;
 use rand::distributions::Distribution;
-use crate::graph::betweenness::BetweennessCalculatorMethod;
 use crate::graph::common::graph::Graph;
 use crate::graph::common::offset_list::OffsetList;
 
@@ -20,7 +19,7 @@ impl KpathCentralityCalculator {
         KpathCentralityCalculator { graph, writer }
     }
 
-    fn calculate_and_persist(&mut self) {
+    pub fn calculate_and_persist(&mut self) {
         let k: i32 = 20; // max length of path
         // let alpha = 0.5; // max error modifier
         let double_alpha = 0;
@@ -77,10 +76,8 @@ impl KpathCentralityCalculator {
             self.writer.serialize((v, value)).unwrap();
         }
     }
-}
 
-impl BetweennessCalculatorMethod for KpathCentralityCalculator {
-    fn calculate_and_write_to_disk(&mut self) {
-        self.calculate_and_persist();
+    pub fn graph(self) -> Graph {
+        self.graph
     }
 }

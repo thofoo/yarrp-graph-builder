@@ -5,7 +5,6 @@ use csv::Writer;
 use log::info;
 use pbr::ProgressBar;
 use rayon::prelude::*;
-use crate::graph::betweenness::BetweennessCalculatorMethod;
 
 use crate::graph::betweenness::brandes::brandes_memory::BrandesMemory;
 use crate::graph::common::collection_wrappers::GettableList;
@@ -23,7 +22,7 @@ impl BrandesCalculator {
         BrandesCalculator { graph, writer }
     }
 
-    fn calculate_and_persist(&mut self) {
+    pub fn calculate_and_persist(&mut self) {
         let c_list = &self.compute_betweenness_in_parallel();
 
         let boundaries = self.graph.edges().node_boundaries();
@@ -85,7 +84,7 @@ impl BrandesCalculator {
     pub fn calculate_delta_for_node(
         neighbors: &impl GettableList<HashSet<i64>>,
         c_list: &mut impl GettableList<f64>,
-        s: i64
+        s: i64,
     ) {
         let memory = BrandesMemory::new();
         let mut s_stack = memory.s_stack;
@@ -133,10 +132,8 @@ impl BrandesCalculator {
             }
         }
     }
-}
 
-impl BetweennessCalculatorMethod for BrandesCalculator {
-    fn calculate_and_write_to_disk(&mut self) {
-        self.calculate_and_persist();
+    pub fn graph(self) -> Graph {
+        self.graph
     }
 }

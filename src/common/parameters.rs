@@ -15,6 +15,7 @@ pub struct OutputPaths {
     edges: PathBuf,
     max_node_ids: PathBuf,
     betweenness: PathBuf,
+    degree: PathBuf,
 }
 
 impl OutputPaths {
@@ -30,6 +31,9 @@ impl OutputPaths {
     pub fn betweenness(&self) -> &PathBuf {
         &self.betweenness
     }
+    pub fn degree(&self) -> &PathBuf {
+        &self.degree
+    }
 }
 
 #[derive(Clone)]
@@ -44,8 +48,15 @@ pub struct GraphBuilderParameters {
     should_persist_index: bool,
     should_persist_edges: bool,
     should_compute_graph: bool,
+    graph_parameters_to_compute: GraphParametersToCompute,
 
     output_paths: OutputPaths,
+}
+
+#[derive(Clone)]
+pub struct GraphParametersToCompute {
+    pub betweenness: bool,
+    pub degree: bool
 }
 
 impl GraphBuilderParameters {
@@ -60,6 +71,7 @@ impl GraphBuilderParameters {
         should_persist_index: bool,
         should_persist_edges: bool,
         should_compute_graph: bool,
+        graph_parameters_to_compute: GraphParametersToCompute,
     ) -> GraphBuilderParameters {
         let input_path = Path::new(input_folder).to_path_buf();
         let intermediary_file_path = Path::new(intermediate_folder).to_path_buf();
@@ -103,6 +115,7 @@ impl GraphBuilderParameters {
             edges: output_path.to_path_buf().join(Path::new("edges.csv")),
             max_node_ids: output_path.to_path_buf().join(Path::new("max_node_ids.csv")),
             betweenness: output_path.to_path_buf().join(Path::new("betweenness.csv")),
+            degree: output_path.to_path_buf().join(Path::new("degree.csv")),
         };
 
         GraphBuilderParameters {
@@ -117,6 +130,7 @@ impl GraphBuilderParameters {
             should_persist_index,
             should_persist_edges,
             should_compute_graph,
+            graph_parameters_to_compute,
         }
     }
 
@@ -164,6 +178,10 @@ impl GraphBuilderParameters {
     }
     pub fn should_compute_graph(&self) -> bool {
         self.should_compute_graph
+    }
+
+    pub fn graph_parameters_to_compute(&self) -> &GraphParametersToCompute {
+        &self.graph_parameters_to_compute
     }
 
     pub fn output_paths(&self) -> &OutputPaths {

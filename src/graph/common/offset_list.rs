@@ -29,6 +29,9 @@ impl <T: Clone> OffsetList<T> {
     pub fn node_boundaries(&self) -> &NodeBoundaries {
         &self.node_boundaries
     }
+    pub fn len(&self) -> usize {
+        self.vec.len()
+    }
 }
 
 impl <T> Index<i64> for OffsetList<T> {

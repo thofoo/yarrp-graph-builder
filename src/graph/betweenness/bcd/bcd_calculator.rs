@@ -6,7 +6,6 @@ use log::info;
 use pbr::ProgressBar;
 use rand::rngs::ThreadRng;
 use rand::seq::SliceRandom;
-use crate::graph::betweenness::BetweennessCalculatorMethod;
 use crate::graph::betweenness::brandes::brandes_calculator::BrandesCalculator;
 use crate::graph::common::collection_wrappers::Stack;
 
@@ -32,7 +31,7 @@ impl BcdCalculator {
         }
     }
 
-    fn calculate_and_persist(&mut self) {
+    pub fn calculate_and_persist(&mut self) {
         let neighbors = self.graph.edges();
         let node_count = neighbors.total_nodes();
 
@@ -124,10 +123,8 @@ impl BcdCalculator {
 
         *c_list.get(target)
     }
-}
 
-impl BetweennessCalculatorMethod for BcdCalculator {
-    fn calculate_and_write_to_disk(&mut self) {
-        self.calculate_and_persist();
+    pub fn graph(self) -> Graph {
+        self.graph
     }
 }

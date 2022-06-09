@@ -11,10 +11,6 @@ mod brandes;
 mod kpath;
 mod bcd;
 
-trait BetweennessCalculatorMethod {
-    fn calculate_and_write_to_disk(&mut self);
-}
-
 pub struct BetweennessCalculator {
     betweenness_method: BetweennessMethod
 }
@@ -24,15 +20,29 @@ impl BetweennessCalculator {
         BetweennessCalculator { betweenness_method }
     }
 
-    pub fn calculate(&self, graph: Graph, writer: Writer<File>) {
+    pub fn calculate(&self, graph: Graph, writer: Writer<File>) -> Graph {
         match &self.betweenness_method {
-            BetweennessMethod::Brandes => self.run_calculation(&mut BrandesCalculator::new(graph, writer)),
-            BetweennessMethod::Bcd => self.run_calculation(&mut BcdCalculator::new(graph, writer)),
-            BetweennessMethod::Kpath => self.run_calculation(&mut KpathCentralityCalculator::new(graph, writer)),
-        };
+            BetweennessMethod::Brandes => self.run_brandes(graph, writer),
+            BetweennessMethod::Bcd => self.run_bcd(graph, writer),
+            BetweennessMethod::Kpath => self.run_kpath(graph, writer),
+        }
     }
 
-    fn run_calculation(&self, calculator: &mut impl BetweennessCalculatorMethod) {
-        calculator.calculate_and_write_to_disk();
+    fn run_brandes(&self, graph: Graph, writer: Writer<File>) -> Graph {
+        let mut calculator = BrandesCalculator::new(graph, writer);
+        calculator.calculate_and_persist();
+        calculator.graph()
+    }
+
+    fn run_bcd(&self, graph: Graph, writer: Writer<File>) -> Graph {
+        let mut calculator = BcdCalculator::new(graph, writer);
+        calculator.calculate_and_persist();
+        calculator.graph()
+    }
+
+    fn run_kpath(&self, graph: Graph, writer: Writer<File>) -> Graph {
+        let mut calculator = KpathCentralityCalculator::new(graph, writer);
+        calculator.calculate_and_persist();
+        calculator.graph()
     }
 }

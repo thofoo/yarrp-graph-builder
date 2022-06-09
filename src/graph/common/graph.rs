@@ -1,6 +1,8 @@
 use std::collections::HashSet;
 use std::path::PathBuf;
+
 use lazy_init::Lazy;
+
 use crate::common::structs::data::{CsvEdge, MaxNodeIds, NodeBoundaries};
 use crate::graph::common::collection_wrappers::Queue;
 use crate::graph::common::offset_list::OffsetList;
@@ -82,5 +84,9 @@ impl Graph {
         }
 
         spd
+    }
+
+    pub fn boundaries(&self) -> &NodeBoundaries {
+        &self.boundaries
     }
 }
