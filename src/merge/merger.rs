@@ -10,7 +10,7 @@ use pbr::ProgressBar;
 
 use crate::{GraphBuilderParameters, IpType};
 use crate::common::parameters;
-use crate::common::structs::data::MaxNodeIds;
+use crate::common::structs::output::MaxNodeIds;
 use crate::merge::merge_processor::MergeProcessor;
 
 pub struct Merger {

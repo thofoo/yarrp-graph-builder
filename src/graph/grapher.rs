@@ -1,6 +1,6 @@
 use log::info;
 
-use crate::common::structs::data::MaxNodeIds;
+use crate::common::structs::output::MaxNodeIds;
 use crate::graph::betweenness::betweenness_methods::BetweennessMethod;
 use crate::graph::betweenness::BetweennessCalculator;
 use crate::graph::common::graph::Graph;
@@ -16,9 +16,9 @@ impl Grapher {
         Grapher { config: config.clone() }
     }
 
-    pub fn collect_graph_stats(&self) {
-        if !self.config.should_compute_graph() {
-            info!("Graph computation flag is FALSE - skipping graph computation.");
+    pub fn collect_graph_parameter_values(&self) {
+        if !self.config.should_compute_graph_parameters() {
+            info!("Graph parameter computation flag is FALSE - skipping graph computation.");
             return;
         }
 
@@ -61,10 +61,13 @@ impl Grapher {
         let method = BetweennessMethod::Brandes;
         info!("Calculating BETWEENNESS CENTRALITY using {:?}", method);
 
-        let betweenness_writer = csv::Writer::from_path(&self.config.output_paths().betweenness())
+        let output_file = &self.config.output_paths().betweenness_folder().join("betweenness.csv");
+        info!("Result will be stored at {}", output_file.to_str().unwrap());
+
+        let betweenness_writer = csv::Writer::from_path(output_file)
             .expect(&format!(
                 "Could not create file for storing betweenness at {}",
-                &self.config.output_paths().betweenness().to_str().unwrap()
+                output_file.to_str().unwrap()
             ));
 
         BetweennessCalculator::new(method).calculate(graph, betweenness_writer)
@@ -73,10 +76,13 @@ impl Grapher {
     fn calculate_degree(&self, graph: Graph) -> Graph {
         info!("Calculating IN and OUT degree");
 
-        let degree_writer = csv::Writer::from_path(&self.config.output_paths().degree())
+        let output_file = &self.config.output_paths().degree_folder().join("degree.csv");
+        info!("Result will be stored at {}", output_file.to_str().unwrap());
+
+        let degree_writer = csv::Writer::from_path(output_file)
             .expect(&format!(
                 "Could not create file for storing degree at {}",
-                &self.config.output_paths().degree().to_str().unwrap()
+                output_file.to_str().unwrap()
             ));
 
         let mut calculator = DegreeCounter::new(graph, degree_writer);

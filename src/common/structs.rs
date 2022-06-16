@@ -11,8 +11,7 @@ pub mod util {
 pub mod data {
     use std::ops::RangeInclusive;
     use math::round::ceil;
-    use serde::Serialize;
-    use serde::Deserialize;
+    use crate::common::structs::output::MaxNodeIds;
 
     pub struct NodeV4 {
         pub target_ip: u32,
@@ -30,18 +29,6 @@ pub mod data {
         pub target_id: u64,
         pub hop_id: u64,
         pub hop_count: u8,
-    }
-
-    #[derive(Debug, Deserialize, Eq, PartialEq)]
-    pub struct CsvEdge {
-        pub from: i64,
-        pub to: i64,
-    }
-
-    #[derive(Debug, Serialize, Deserialize, Eq, PartialEq)]
-    pub struct MaxNodeIds {
-        pub known: usize,
-        pub unknown: usize,
     }
 
     #[derive(Clone)]
@@ -143,5 +130,29 @@ pub mod data {
         pub fn offset(&self) -> i64 {
             self.min_node.abs()
         }
+    }
+}
+
+pub mod output {
+    use serde::Serialize;
+    use serde::Deserialize;
+
+    #[derive(Debug, Deserialize, Eq, PartialEq)]
+    pub struct CsvEdge {
+        pub from: i64,
+        pub to: i64,
+    }
+
+    #[derive(Debug, Serialize, Deserialize, Eq, PartialEq)]
+    pub struct MaxNodeIds {
+        pub known: usize,
+        pub unknown: usize,
+    }
+
+    #[derive(Debug, Deserialize, Eq, PartialEq)]
+    pub struct DegreesForNode {
+        pub node: i64,
+        pub deg_in: u32,
+        pub deg_out: u32,
     }
 }

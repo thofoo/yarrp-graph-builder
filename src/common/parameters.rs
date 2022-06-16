@@ -14,8 +14,8 @@ pub struct OutputPaths {
     mapping: PathBuf,
     edges: PathBuf,
     max_node_ids: PathBuf,
-    betweenness: PathBuf,
-    degree: PathBuf,
+    betweenness_folder: PathBuf,
+    degree_folder: PathBuf,
 }
 
 impl OutputPaths {
@@ -28,11 +28,11 @@ impl OutputPaths {
     pub fn max_node_ids(&self) -> &PathBuf {
         &self.max_node_ids
     }
-    pub fn betweenness(&self) -> &PathBuf {
-        &self.betweenness
+    pub fn betweenness_folder(&self) -> &PathBuf {
+        &self.betweenness_folder
     }
-    pub fn degree(&self) -> &PathBuf {
-        &self.degree
+    pub fn degree_folder(&self) -> &PathBuf {
+        &self.degree_folder
     }
 }
 
@@ -47,7 +47,8 @@ pub struct GraphBuilderParameters {
     should_merge: bool,
     should_persist_index: bool,
     should_persist_edges: bool,
-    should_compute_graph: bool,
+    should_compute_graph_parameters: bool,
+    should_compute_stats: bool,
     graph_parameters_to_compute: GraphParametersToCompute,
 
     output_paths: OutputPaths,
@@ -70,7 +71,8 @@ impl GraphBuilderParameters {
         should_merge: bool,
         should_persist_index: bool,
         should_persist_edges: bool,
-        should_compute_graph: bool,
+        should_compute_graph_parameters: bool,
+        should_compute_stats: bool,
         graph_parameters_to_compute: GraphParametersToCompute,
     ) -> GraphBuilderParameters {
         let input_path = Path::new(input_folder).to_path_buf();
@@ -88,8 +90,7 @@ impl GraphBuilderParameters {
         }
 
         if !intermediary_file_path.exists() {
-            error!("Specified intermediate path does not exist");
-            exit(1);
+            fs::create_dir_all(&intermediary_file_path).expect("Could not create intermediary folder");
         }
 
         if !intermediary_file_path.is_dir() {
@@ -98,8 +99,7 @@ impl GraphBuilderParameters {
         }
 
         if !output_path.exists() {
-            error!("Specified output path does not exist");
-            exit(1);
+            fs::create_dir_all(&output_path).expect("Could not create output folder");
         }
 
         if !output_path.is_dir() {
@@ -107,15 +107,19 @@ impl GraphBuilderParameters {
             exit(1);
         }
 
-        fs::create_dir_all(&intermediary_file_path).expect("Could not create intermediary file paths");
+        let betweenness_folder = output_path.to_path_buf().join(Path::new("betweenness"));
+        let degree_folder = output_path.to_path_buf().join(Path::new("degree"));
+
+        fs::create_dir_all(&betweenness_folder).expect("Could not create betweenness file paths");
+        fs::create_dir_all(&degree_folder).expect("Could not create degree file paths");
 
         let output_paths = OutputPaths {
             _root: output_path.to_path_buf(),
             mapping: output_path.to_path_buf().join(Path::new("mapping.csv")),
             edges: output_path.to_path_buf().join(Path::new("edges.csv")),
             max_node_ids: output_path.to_path_buf().join(Path::new("max_node_ids.csv")),
-            betweenness: output_path.to_path_buf().join(Path::new("betweenness.csv")),
-            degree: output_path.to_path_buf().join(Path::new("degree.csv")),
+            betweenness_folder,
+            degree_folder,
         };
 
         GraphBuilderParameters {
@@ -129,7 +133,8 @@ impl GraphBuilderParameters {
             should_merge,
             should_persist_index,
             should_persist_edges,
-            should_compute_graph,
+            should_compute_graph_parameters,
+            should_compute_stats,
             graph_parameters_to_compute,
         }
     }
@@ -176,8 +181,11 @@ impl GraphBuilderParameters {
     pub fn should_persist_edges(&self) -> bool {
         self.should_persist_edges
     }
-    pub fn should_compute_graph(&self) -> bool {
-        self.should_compute_graph
+    pub fn should_compute_graph_parameters(&self) -> bool {
+        self.should_compute_graph_parameters
+    }
+    pub fn should_compute_stats(&self) -> bool {
+        self.should_compute_stats
     }
 
     pub fn graph_parameters_to_compute(&self) -> &GraphParametersToCompute {

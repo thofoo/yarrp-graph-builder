@@ -3,7 +3,8 @@ use std::path::PathBuf;
 
 use lazy_init::Lazy;
 
-use crate::common::structs::data::{CsvEdge, MaxNodeIds, NodeBoundaries};
+use crate::common::structs::data::NodeBoundaries;
+use crate::common::structs::output::{CsvEdge, MaxNodeIds};
 use crate::graph::common::collection_wrappers::Queue;
 use crate::graph::common::offset_list::OffsetList;
 use crate::graph::common::sparse_offset_list::SparseOffsetList;
