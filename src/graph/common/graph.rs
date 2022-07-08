@@ -7,6 +7,7 @@ use crate::common::structs::data::{CsvEdge, MaxNodeIds, NodeBoundaries};
 use crate::graph::common::collection_wrappers::Queue;
 use crate::graph::common::offset_list::OffsetList;
 use crate::graph::common::sparse_offset_list::SparseOffsetList;
+use crate::GraphBuilderParameters;
 
 pub struct Graph {
     edges: OffsetList<HashSet<i64>>,
@@ -15,7 +16,27 @@ pub struct Graph {
 }
 
 impl Graph {
-    pub fn new(max_node_ids: MaxNodeIds) -> Graph {
+    pub fn new(config: &GraphBuilderParameters, from_deduplicated: bool) -> Graph {
+        let max_node_id_path = config.output_paths().max_node_ids();
+
+        let max_node_ids: MaxNodeIds = csv::Reader::from_path(max_node_id_path).unwrap()
+            .deserialize()
+            .next()
+            .unwrap()
+            .unwrap();
+
+        let edges_path = if from_deduplicated {
+            config.output_paths().edges_deduplicated()
+        } else {
+            config.output_paths().edges()
+        };
+
+        let mut graph = Graph::init(max_node_ids);
+        graph.parse(edges_path);
+        graph
+    }
+
+    fn init(max_node_ids: MaxNodeIds) -> Graph {
         let boundaries = NodeBoundaries::new(max_node_ids);
         Graph {
             edges: OffsetList::new(
@@ -27,7 +48,7 @@ impl Graph {
         }
     }
 
-    pub fn parse(&mut self, edges_path: &PathBuf) {
+    fn parse(&mut self, edges_path: &PathBuf) {
         let mut edges_reader = csv::Reader::from_path(edges_path).unwrap();
         edges_reader.deserialize()
             .skip(1)

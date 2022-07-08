@@ -47,10 +47,6 @@ impl Merger {
             .expect(&format!(
                 "Could not create file for storing edges at {}", edge_output_path.to_str().unwrap()
             ));
-        let mut max_node_ids_writer = csv::Writer::from_path(&self.config.output_paths().max_node_ids())
-            .expect(&format!(
-                "Could not create file for storing node mapping at {}", max_node_id_path.to_str().unwrap()
-            ));
 
         let raw_files_list = fs::read_dir(&self.config.intermediary_file_path()).unwrap();
         let dirs_to_process: Vec<DirEntry> = raw_files_list
@@ -63,11 +59,19 @@ impl Merger {
         let max_known_node_id = self.write_node_mapping(index_path, &mut index_writer);
         let max_unknown_node_id = self.write_edge_mapping(dirs_to_process, &mut edge_writer);
 
-        let max_node_ids = MaxNodeIds {
-            known: max_known_node_id,
-            unknown: max_unknown_node_id,
-        };
-        max_node_ids_writer.serialize(max_node_ids).unwrap()
+        let has_proper_node_id_values = self.config.should_persist_index() && self.config.should_persist_edges();
+        if has_proper_node_id_values {
+            let mut max_node_ids_writer = csv::Writer::from_path(&self.config.output_paths().max_node_ids())
+                .expect(&format!(
+                    "Could not create file for storing node mapping at {}", max_node_id_path.to_str().unwrap()
+                ));
+
+            let max_node_ids = MaxNodeIds {
+                known: max_known_node_id,
+                unknown: max_unknown_node_id,
+            };
+            max_node_ids_writer.serialize(max_node_ids).unwrap()
+        }
     }
 
     fn write_node_mapping(&self, index_path: PathBuf, index_writer: &mut Writer<File>) -> usize {

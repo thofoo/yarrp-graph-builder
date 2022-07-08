@@ -1,6 +1,5 @@
 use log::info;
 
-use crate::common::structs::data::MaxNodeIds;
 use crate::graph::betweenness::betweenness_methods::BetweennessMethod;
 use crate::graph::betweenness::BetweennessCalculator;
 use crate::graph::common::graph::Graph;
@@ -30,18 +29,7 @@ impl Grapher {
         info!("Building in-memory graph for calculating graph values. This may take a while \
         but only has to be done once per run.");
 
-        let edges_path = self.config.output_paths().edges();
-        let max_node_id_path = self.config.output_paths().max_node_ids();
-
-        let max_node_ids: MaxNodeIds = csv::Reader::from_path(max_node_id_path).unwrap()
-            .deserialize()
-            .next()
-            .unwrap()
-            .unwrap();
-
-        let mut graph = Graph::new(max_node_ids);
-        graph.parse(edges_path);
-        graph
+        Graph::new(&self.config, /* from_deduplicated = */ true)
     }
 
     fn calculate_graph_parameters(&self, graph: Graph) {

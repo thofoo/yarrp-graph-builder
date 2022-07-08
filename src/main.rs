@@ -4,6 +4,7 @@ use env_logger::Env;
 use log::{info, LevelFilter};
 use crate::common::parameters::{GraphBuilderParameters, GraphParametersToCompute};
 use crate::common::structs::util::IpType;
+use crate::deduplicator::deduplicator::Deduplicator;
 use crate::graph::grapher::Grapher;
 use crate::merge::merger::Merger;
 use crate::preprocess::preprocessor::Preprocessor;
@@ -13,6 +14,7 @@ mod graph;
 mod preprocess;
 mod common;
 mod buckets;
+mod deduplicator;
 
 fn main() {
     let mut env_builder = env_logger::builder();
@@ -26,19 +28,20 @@ fn main() {
 
     // TODO get from cmd line args
     let config = GraphBuilderParameters::new(
-        /* read_compressed: */ true,
-        IpType::V6,
-        "../../01_yarrp_scan/input/v6",
-        "../../01_yarrp_scan/output/v6/intermediate",
-        "../../01_yarrp_scan/output/v6",
-        /* should_preprocess: */ true,
-        /* should_merge: */ true,
-        /* should_persist_index: */ true,
-        /* should_persist_edges: */ true,
-        /* should_compute_graph: */ true,
+        /* read_compressed: */ false,
+        IpType::V4,
+        "../../01_yarrp_scan/input/v4",
+        "../../01_yarrp_scan/output/v4/intermediate",
+        "../../01_yarrp_scan/output/v4",
+        /* should_preprocess: */ false,
+        /* should_merge: */ false,
+        /* should_persist_index: */ false,
+        /* should_persist_edges: */ false,
+        /* should_deduplicate_edges: */ true,
+        /* should_compute_graph: */ false,
         GraphParametersToCompute {
             betweenness: false,
-            degree: true,
+            degree: false,
         }
     );
 
@@ -51,6 +54,9 @@ fn main() {
 
     let merger = Merger::new(&config);
     merger.merge_data();
+
+    let deduplicator = Deduplicator::new(&config);
+    deduplicator.deduplicate_edges();
 
     let grapher = Grapher::new(&config);
     grapher.collect_graph_stats();

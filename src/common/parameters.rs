@@ -13,6 +13,7 @@ pub struct OutputPaths {
     _root: PathBuf,
     mapping: PathBuf,
     edges: PathBuf,
+    edges_deduplicated: PathBuf,
     max_node_ids: PathBuf,
     betweenness: PathBuf,
     degree: PathBuf,
@@ -24,6 +25,9 @@ impl OutputPaths {
     }
     pub fn edges(&self) -> &PathBuf {
         &self.edges
+    }
+    pub fn edges_deduplicated(&self) -> &PathBuf {
+        &self.edges_deduplicated
     }
     pub fn max_node_ids(&self) -> &PathBuf {
         &self.max_node_ids
@@ -47,6 +51,7 @@ pub struct GraphBuilderParameters {
     should_merge: bool,
     should_persist_index: bool,
     should_persist_edges: bool,
+    should_deduplicate_edges: bool,
     should_compute_graph: bool,
     graph_parameters_to_compute: GraphParametersToCompute,
 
@@ -70,6 +75,7 @@ impl GraphBuilderParameters {
         should_merge: bool,
         should_persist_index: bool,
         should_persist_edges: bool,
+        should_deduplicate_edges: bool,
         should_compute_graph: bool,
         graph_parameters_to_compute: GraphParametersToCompute,
     ) -> GraphBuilderParameters {
@@ -113,6 +119,7 @@ impl GraphBuilderParameters {
             _root: output_path.to_path_buf(),
             mapping: output_path.to_path_buf().join(Path::new("mapping.csv")),
             edges: output_path.to_path_buf().join(Path::new("edges.csv")),
+            edges_deduplicated: output_path.to_path_buf().join(Path::new("edges_deduplicated.csv")),
             max_node_ids: output_path.to_path_buf().join(Path::new("max_node_ids.csv")),
             betweenness: output_path.to_path_buf().join(Path::new("betweenness.csv")),
             degree: output_path.to_path_buf().join(Path::new("degree.csv")),
@@ -129,6 +136,7 @@ impl GraphBuilderParameters {
             should_merge,
             should_persist_index,
             should_persist_edges,
+            should_deduplicate_edges,
             should_compute_graph,
             graph_parameters_to_compute,
         }
@@ -175,6 +183,9 @@ impl GraphBuilderParameters {
     }
     pub fn should_persist_edges(&self) -> bool {
         self.should_persist_edges
+    }
+    pub fn should_deduplicate_edges(&self) -> bool {
+        self.should_deduplicate_edges
     }
     pub fn should_compute_graph(&self) -> bool {
         self.should_compute_graph

@@ -143,5 +143,8 @@ pub mod data {
         pub fn offset(&self) -> i64 {
             self.min_node.abs()
         }
+        pub fn len(&self) -> usize {
+            (self.max_node - self.min_node) as usize
+        }
     }
 }
