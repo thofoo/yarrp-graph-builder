@@ -25,51 +25,54 @@ impl BrandesCalculator {
     pub fn calculate_and_persist(&mut self) {
         let c_list = &self.compute_betweenness_in_parallel();
 
-        let boundaries = self.graph.edges().node_boundaries();
-
         self.writer.serialize(("node_id", "betweenness")).unwrap();
-        for s in boundaries.range_inclusive() {
+        for s in self.graph.edges().keys() {
             self.writer.serialize((s, c_list[s])).unwrap();
         }
     }
 
-    fn compute_betweenness_in_parallel(&self) -> OffsetList<f64> {
+    fn compute_betweenness_in_parallel(&mut self) -> OffsetList<f64> {
         let edges = self.graph.edges();
 
-        let node_count = edges.total_nodes();
-        info!("Processing {} nodes...", node_count);
+        let nodes = edges.keys();
 
-        let boundaries = self.graph.edges().node_boundaries();
+        info!("Processing {} nodes...", nodes.len());
+
         let mut partial_results: Vec<SparseOffsetList<f64>> = Vec::new();
 
         // Make sure to not use too many threads, as that could lead to out-of-memory errors if you
         // have plenty of input data (=> the thread results are piling up before they are collected)
         // Good baseline is to use the number of threads available on your machine
-        boundaries.divide_into_buckets(12)
+        let num_of_threads = 8.0;
+        nodes.chunks(((nodes.len() as f64) / num_of_threads).ceil() as usize)
+            .collect::<Vec<&[i64]>>()
             .into_par_iter()
-            .map(|immutable_bucket| {
-                let mut bucket = immutable_bucket.clone();
+            .map(|nodes_to_visit| {
                 let mut local_c_list = SparseOffsetList::new(0.0);
                 let mut counter = 0;
 
-                info!("{}", bucket.textual_description_of_range());
+                let node_count = nodes_to_visit.len();
 
-                while bucket.has_next() {
-                    Self::calculate_delta_for_node(edges, &mut local_c_list, bucket.next());
+                let thread_info = format!("Thread (first node {}): {} nodes", nodes_to_visit[0], node_count);
+                info!("{}", thread_info);
+
+                for &s in nodes_to_visit {
+                    Self::calculate_delta_for_node(edges, &mut local_c_list, s);
                     counter += 1;
-                    if counter % 10_000_000 == 0 {
-                        println!("Thread {}: {} / {}", bucket.index(), counter, bucket.size());
+                    if counter % 1_000 == 0 {
+                        let thread_info = format!("Thread (first node {}): {} / {}", nodes_to_visit[0], counter, node_count);
+                        info!("{}", thread_info);
                     }
                 }
 
-                info!("Thread {} finished", bucket.index());
+                info!("Thread (first node {}): finished", nodes_to_visit[0]);
                 local_c_list
             })
             .collect_into_vec(&mut partial_results);
 
         let result_count = partial_results.len() as u64;
         let mut progress_bar = ProgressBar::new(result_count);
-        let mut global_c_list: OffsetList<f64> = OffsetList::new(0.0, boundaries.clone());
+        let mut global_c_list: OffsetList<f64> = OffsetList::new(0.0, self.graph.boundaries().clone());
         for result in partial_results {
             for (&node, &value) in result.iter() {
                 global_c_list[node] += value;
@@ -130,7 +133,7 @@ impl BrandesCalculator {
                     *c_list.get_mut(w) += delta.get(w);
                 }
             }
-        }
+        } // https://github.com/v4rrlo/brandes-betweenness-centrality
     }
 
     pub fn graph(self) -> Graph {

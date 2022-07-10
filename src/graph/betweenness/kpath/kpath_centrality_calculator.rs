@@ -20,16 +20,17 @@ impl KpathCentralityCalculator {
     }
 
     pub fn calculate_and_persist(&mut self) {
-        let k: i32 = 20; // max length of path
+        todo!("not today")
+        /*let k: i32 = 20; // max length of path
         // let alpha = 0.5; // max error modifier
         let double_alpha = 0;
 
-        let neighbors = self.graph.edges();
+        let mut neighbors = self.graph.edges();
         let node_count = neighbors.total_nodes();
 
         info!("Processing {} nodes...", node_count);
 
-        let boundaries = self.graph.edges().node_boundaries();
+        let boundaries = self.graph.boundaries();
         let mut rng = rand::thread_rng();
 
         let node_sampler = Uniform::new_inclusive(
@@ -52,7 +53,7 @@ impl KpathCentralityCalculator {
             explored[s] = true;
 
             let mut j = 1;
-            let mut targets: &HashSet<i64> = &neighbors[s];
+            let mut targets: &HashSet<i64> = neighbors.get_mut(s);
             while j <= l && targets.iter().any(|&u| !explored[u]) {
                 let unexplored: Vec<&i64> = targets.iter()
                     .filter(|&&u| !explored[u])
@@ -61,7 +62,7 @@ impl KpathCentralityCalculator {
                 let v = **unexplored.choose(&mut rng).unwrap();
                 explored[v] = true;
                 count_list[v] += 1;
-                targets = &neighbors[v];
+                targets = neighbors.get_mut(v);
                 j += 1;
             }
 
@@ -74,7 +75,7 @@ impl KpathCentralityCalculator {
         for v in boundaries.range_inclusive() {
             let value = kn * (count_list[v] as f64 / t_raw);
             self.writer.serialize((v, value)).unwrap();
-        }
+        }*/
     }
 
     pub fn graph(self) -> Graph {

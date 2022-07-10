@@ -39,7 +39,7 @@ impl BcdCalculator {
         let mut progress_bar = ProgressBar::new(node_count as u64);
         progress_bar.set(0);
 
-        let boundaries = self.graph.edges().node_boundaries();
+        let boundaries = self.graph.boundaries();
         let offset = boundaries.offset();
 
         self.writer.serialize(("node_id", "betweenness")).unwrap();

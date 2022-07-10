@@ -3,7 +3,7 @@ use std::fs::File;
 use csv::Writer;
 use pbr::ProgressBar;
 
-use crate::graph::common::collection_wrappers::{GettableList, Stack};
+use crate::graph::common::collection_wrappers::Stack;
 use crate::graph::common::graph::Graph;
 use crate::graph::degree::degree_memory::DegreeMemory;
 

@@ -1,9 +1,11 @@
 use std::collections::HashSet;
 use std::fs::File;
+
 use csv::Writer;
 use log::info;
 use pbr::ProgressBar;
-use crate::graph::common::collection_wrappers::{GettableList, Stack};
+
+use crate::graph::common::collection_wrappers::Stack;
 use crate::graph::common::graph::Graph;
 use crate::GraphBuilderParameters;
 
@@ -25,18 +27,17 @@ impl Deduplicator {
         info!("Starting edge deduplication by reading in graph...");
         let mut writer = self.create_file_writer();
 
-        let graph = Graph::new(&self.config, /* from_deduplicated = */ false);
+        let mut graph = Graph::new(&self.config, /* from_deduplicated = */ false);
 
         info!("Storing deduplicated paths to disk...");
         let edges = graph.edges();
-        let boundaries = edges.node_boundaries();
 
         let mut node_stack = Stack::<i64>::new();
         node_stack.push(0);
 
         let mut visited_nodes = HashSet::<i64>::new();
 
-        let mut progress_bar = ProgressBar::new(boundaries.len() as u64);
+        let mut progress_bar = ProgressBar::new(edges.total_nodes() as u64);
         let mut counter = 0;
 
         writer.serialize(("from", "to")).unwrap();
