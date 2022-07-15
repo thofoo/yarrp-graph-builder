@@ -3,7 +3,6 @@ use std::fs::File;
 use csv::Writer;
 
 use crate::common::structs::data::NodeBoundaries;
-use crate::graph::common::collection_wrappers::GettableList;
 use crate::graph::common::offset_list::OffsetList;
 
 pub struct DegreeMemory {
@@ -27,7 +26,7 @@ impl DegreeMemory {
         // Important: this will set the "in" value for 0 to 1 (it is visited once),
         // so this needs to be removed further down the processing
 
-        let mut entry = self.memory.get_mut(id);
+        let mut entry = self.memory[id];
         entry.0 += 1;
 
         let is_new = entry.1 == 0;

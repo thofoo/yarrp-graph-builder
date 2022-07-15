@@ -25,7 +25,7 @@ impl DegreeCounter {
 
         while !node_stack.is_empty() {
             let node = node_stack.upop();
-            let next_nodes = edges.get(node);
+            let next_nodes = &edges[node];
             let node_is_new = memory.set_in_out_count(node, next_nodes.len());
 
             if node_is_new {

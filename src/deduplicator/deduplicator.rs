@@ -27,7 +27,7 @@ impl Deduplicator {
         info!("Starting edge deduplication by reading in graph...");
         let mut writer = self.create_file_writer();
 
-        let mut graph = Graph::new(&self.config, /* from_deduplicated = */ false);
+        let graph = Graph::new(&self.config, /* from_deduplicated = */ false);
 
         info!("Storing deduplicated paths to disk...");
         let edges = graph.edges();
@@ -49,7 +49,7 @@ impl Deduplicator {
 
             visited_nodes.insert(node);
 
-            let next_nodes = edges.get(node);
+            let next_nodes = &edges[node];
             for &next_node in next_nodes {
                 writer.serialize((node, next_node)).unwrap();
                 node_stack.push(next_node);

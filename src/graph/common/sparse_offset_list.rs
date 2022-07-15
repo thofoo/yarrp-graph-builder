@@ -1,9 +1,9 @@
-use std::collections::hash_map::Iter;
-use std::collections::HashMap;
-use crate::graph::common::collection_wrappers::GettableList;
+use std::ops::{Index, IndexMut};
+use hashbrown::hash_map::Iter;
+use hashbrown::HashMap;
 
 pub struct SparseOffsetList<T: Clone> {
-    map: HashMap<i64, T>,
+    map: hashbrown::HashMap<i64, T>,
     default: T
 }
 
@@ -15,13 +15,12 @@ impl <T: Clone> SparseOffsetList<T> {
         }
     }
 
-    pub fn get(&mut self, index: i64) -> &T {
+    pub fn get(&self, index: i64) -> &T {
         if !self.map.contains_key(&index) {
-            let value = self.default.clone();
-            self.map.insert(index, value);
+            &self.default
+        } else {
+            self.map.get(&index).unwrap()
         }
-
-        self.map.get(&index).unwrap()
     }
 
     pub fn get_mut(&mut self, index: i64) -> &mut T {
@@ -35,10 +34,6 @@ impl <T: Clone> SparseOffsetList<T> {
 
     pub fn set(&mut self, index: i64, value: T) {
         self.map.insert(index, value);
-    }
-
-    pub fn has(&self, index: i64) -> bool {
-        self.map.contains_key(&index)
     }
 
     pub fn keys(&self) -> Vec<i64> {
@@ -57,12 +52,16 @@ impl <T: Clone> SparseOffsetList<T> {
     }
 }
 
-impl <T: Clone> GettableList<T> for SparseOffsetList<T> {
-    fn get(&self, index: i64) -> &T {
-        &self.map.get(&index).unwrap_or(&self.default)
-    }
+impl <T: Clone> Index<i64> for SparseOffsetList<T> {
+    type Output = T;
 
-    fn get_mut(&mut self, index: i64) -> &mut T {
+    fn index(&self, index: i64) -> &Self::Output {
+        &self.get(index)
+    }
+}
+
+impl <T: Clone> IndexMut<i64> for SparseOffsetList<T> {
+    fn index_mut(&mut self, index: i64) -> &mut Self::Output {
         self.get_mut(index)
     }
 }
