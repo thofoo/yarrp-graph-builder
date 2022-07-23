@@ -1,5 +1,6 @@
 use std::collections::HashSet;
 use std::path::PathBuf;
+use lazy_init::Lazy;
 
 use crate::common::structs::data::{CsvEdge, MaxNodeIds, NodeBoundaries};
 use crate::graph::common::sparse_offset_list::SparseOffsetList;
@@ -7,6 +8,7 @@ use crate::GraphBuilderParameters;
 
 pub struct Graph {
     edges: SparseOffsetList<HashSet<i64>>,
+    reverse: Lazy<SparseOffsetList<HashSet<i64>>>,
     boundaries: NodeBoundaries,
 }
 
@@ -37,8 +39,45 @@ impl Graph {
             edges: SparseOffsetList::new(
                 HashSet::<i64>::new()
             ),
+            reverse: Lazy::new(),
             boundaries,
         }
+    }
+
+    pub fn ensure_reversed_edges_exist(&mut self) {
+        let edges = &self.edges;
+        self.reverse.get_or_create(|| Self::calculate_reverse_graph(edges));
+    }
+
+    /**
+     * Returns a reversed version of the edge list.
+     * WARNING: You need to call `ensure_reversed_edges_exist` first (once),
+     * otherwise you get a panic!().
+     */
+    pub fn edges_reversed(&self) -> &SparseOffsetList<HashSet<i64>> {
+        // We could also just make this function mutable and call get_or_create
+        // but then we'd lock the result in a mutable borrow, which creates issues
+
+        if let Some(reversed) = self.reverse.get() {
+            reversed
+        } else {
+            panic!("ERROR: You tried accessing the reverse edges before initializing them. \
+            Please make sure to call `ensure_reversed_edges_exist` before using this function.");
+        }
+    }
+
+    fn calculate_reverse_graph(edges: &SparseOffsetList<HashSet<i64>>) -> SparseOffsetList<HashSet<i64>> {
+        let mut reversed: SparseOffsetList<HashSet<i64>> = SparseOffsetList::new(
+            HashSet::<i64>::new(),
+        );
+
+        for s in edges.keys() {
+            for &u in &edges[s] {
+                reversed[u].insert(s);
+            }
+        }
+
+        reversed
     }
 
     fn parse(&mut self, edges_path: &PathBuf) {

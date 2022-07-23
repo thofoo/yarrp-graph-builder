@@ -3,7 +3,7 @@ use hashbrown::hash_map::Iter;
 use hashbrown::HashMap;
 
 pub struct SparseOffsetList<T: Clone> {
-    map: hashbrown::HashMap<i64, T>,
+    map: HashMap<i64, T>,
     default: T
 }
 

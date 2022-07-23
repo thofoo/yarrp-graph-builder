@@ -1,6 +1,7 @@
 use std::fs::File;
 
 use csv::Writer;
+use log::info;
 use pbr::ProgressBar;
 
 use crate::graph::common::collection_wrappers::Stack;
@@ -13,14 +14,21 @@ pub struct DegreeCounter {
 }
 
 impl DegreeCounter {
+    pub fn new(graph: Graph, writer: Writer<File>) -> DegreeCounter {
+        DegreeCounter {
+            graph, writer
+        }
+    }
+
     pub fn calculate_and_persist(&mut self) {
-        let mut memory = DegreeMemory::new(self.graph.boundaries().clone());
+        let mut memory = DegreeMemory::new();
 
         let edges = self.graph.edges();
         let mut node_stack = Stack::<i64>::new();
         node_stack.push(0);
 
-        let mut progress_bar = ProgressBar::new(memory.len() as u64);
+        info!("Counting degrees for all nodes...");
+        let mut progress_bar = ProgressBar::new(self.graph.boundaries().len() as u64);
         let mut counter = 0;
 
         while !node_stack.is_empty() {
@@ -41,19 +49,44 @@ impl DegreeCounter {
         }
         progress_bar.finish();
 
-        memory.persist(&mut self.writer);
+        self.persist(memory);
+    }
+
+    fn persist(&mut self, memory: DegreeMemory) {
+        let mut progress_bar = ProgressBar::new(self.graph.boundaries().len() as u64);
+        let mut counter = 0;
+
+        info!("Calculating values and writing to file...");
+        self.writer.serialize((
+            "node_id",
+            "degree_in",
+            "degree_out",
+            "and_in",
+            "and_out",
+            "and_total",
+            "iand_in",
+            "iand_out",
+            "iand_total",
+        )).unwrap();
+
+        for node in self.graph.boundaries().range_inclusive() {
+            self.writer.serialize(
+                memory.collect_values_for_node(node, &mut self.graph).as_tuple()
+            ).unwrap();
+
+            counter += 1;
+            if counter % 10_000 == 0 {
+                progress_bar.add(10_000);
+            }
+        }
+
+        self.writer.flush().unwrap();
+
+        progress_bar.finish();
     }
 
 
     pub fn graph(self) -> Graph {
         self.graph
-    }
-}
-
-impl DegreeCounter {
-    pub fn new(graph: Graph, writer: Writer<File>) -> DegreeCounter {
-        DegreeCounter {
-            graph, writer
-        }
     }
 }

@@ -66,5 +66,8 @@ pub mod data {
         pub fn max_node(&self) -> i64 {
             self.max_node
         }
+        pub fn len(&self) -> usize {
+            (self.min_node + self.max_node + 1) as usize
+        }
     }
 }

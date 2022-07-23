@@ -1,7 +1,6 @@
 use log::info;
+use crate::graph::betweenness::brandes_calculator::BrandesCalculator;
 
-use crate::graph::betweenness::betweenness_methods::BetweennessMethod;
-use crate::graph::betweenness::BetweennessCalculator;
 use crate::graph::common::graph::Graph;
 use crate::graph::degree::degree_counter::DegreeCounter;
 use crate::GraphBuilderParameters;
@@ -46,8 +45,7 @@ impl Grapher {
     }
 
     fn calculate_betweenness(&self, graph: Graph) -> Graph {
-        let method = BetweennessMethod::Brandes;
-        info!("Calculating BETWEENNESS CENTRALITY using {:?}", method);
+        info!("Calculating BETWEENNESS CENTRALITY using BRANDES algorithm");
 
         let betweenness_writer = csv::Writer::from_path(&self.config.output_paths().betweenness())
             .expect(&format!(
@@ -55,7 +53,9 @@ impl Grapher {
                 &self.config.output_paths().betweenness().to_str().unwrap()
             ));
 
-        BetweennessCalculator::new(method).calculate(graph, betweenness_writer)
+        let mut calculator = BrandesCalculator::new(graph, betweenness_writer);
+        calculator.calculate_and_persist();
+        calculator.graph()
     }
 
     fn calculate_degree(&self, graph: Graph) -> Graph {

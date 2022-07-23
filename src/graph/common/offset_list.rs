@@ -6,6 +6,7 @@ pub struct OffsetList<T> {
     offset: usize,
 }
 
+#[allow(dead_code)]
 impl <T: Clone> OffsetList<T> {
     pub fn new(default: T, boundaries: NodeBoundaries) -> OffsetList<T> {
         let positive_size = (boundaries.max_node() + 1) as usize;
