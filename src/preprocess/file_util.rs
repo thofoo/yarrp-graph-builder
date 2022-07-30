@@ -1,9 +1,12 @@
+use std::fs;
 use std::fs::File;
-use std::io::BufWriter;
+use std::io::{BufWriter, Read};
 use std::path::{Path, PathBuf};
 use std::process::Command;
+use flate2::read::GzDecoder;
 use log::error;
 use serde::Serialize;
+use warts::Object;
 
 pub fn write_to_file<T: Serialize>(path: &PathBuf, data: &T) {
     let file = File::create(path).expect("Error while creating file to write");
@@ -35,4 +38,13 @@ pub fn read_bzip2_lines<P>(filename: P) -> Option<String>
     });
 
     Some(output_str)
+}
+
+pub fn read_warts_from_gzip(path: PathBuf) -> Vec<Object> {
+    let compressed_bytes = fs::read(path).unwrap();
+    let file_bytes: Vec<u8> = GzDecoder::new(compressed_bytes.as_slice())
+        .bytes()
+        .map(|i| i.unwrap())
+        .collect();
+    Object::all_from_bytes(file_bytes.as_slice())
 }

@@ -1,13 +1,15 @@
 extern crate core;
 
+use std::path::Path;
 use env_logger::Env;
 use log::{info, LevelFilter};
-use crate::common::parameters::{GraphBuilderParameters, GraphParametersToCompute};
+use crate::common::parameters::{FeatureToggle, GraphBuilderParameters, GraphParametersToCompute};
 use crate::common::structs::util::IpType;
 use crate::deduplicator::deduplicator::Deduplicator;
 use crate::graph::grapher::Grapher;
 use crate::merge::merger::Merger;
-use crate::preprocess::preprocessor::Preprocessor;
+use crate::preprocess::warts_data_preprocessor::WartsDataPreprocessor;
+use crate::preprocess::yarrp_data_preprocessor::YarrpDataPreprocessor;
 
 mod merge;
 mod graph;
@@ -26,38 +28,95 @@ fn main() {
 
     info!("Let's go!");
 
-    // TODO get from cmd line args
+    // TODO get from config file
+    let run_pipeline_on_yarrp_scan = false;
+    let run_pipeline_on_caida_scans = true;
+
+    if run_pipeline_on_yarrp_scan {
+        run_on_yarrp_scan();
+    }
+    if run_pipeline_on_caida_scans {
+        run_on_caida_scans();
+    }
+}
+
+fn run_on_yarrp_scan() {
     let config = GraphBuilderParameters::new(
         /* read_compressed: */ false,
         IpType::V4,
         "../../01_yarrp_scan/input/v4",
         "../../01_yarrp_scan/output/v4/intermediate",
         "../../01_yarrp_scan/output/v4",
-        /* should_preprocess: */ false,
-        /* should_merge: */ false,
-        /* should_persist_index: */ false,
-        /* should_persist_edges: */ false,
-        /* should_deduplicate_edges: */ true,
-        /* should_compute_graph: */ false,
-        GraphParametersToCompute {
-            betweenness: false,
-            degree: false,
+        FeatureToggle {
+            should_preprocess: false,
+            should_merge: false,
+            should_persist_index: false,
+            should_persist_edges: false,
+            should_deduplicate_edges: false,
+            should_compute_graph: true,
+            graph_parameters_to_compute: GraphParametersToCompute {
+                betweenness: false,
+                degree: true,
+            }
         }
     );
 
-    info!("Expecting to read IP{:?} addresses.", &config.address_type());
+    let mut configs = Vec::new();
+    configs.push(config);
+    run(&configs);
+}
 
-    config.print_path_info();
+fn run_on_caida_scans() {
+    let base_path = Path::new("../../caida-ip-scans/v6/").to_path_buf();
 
-    let mut preprocessor = Preprocessor::new(&config);
+    let preprocessor = WartsDataPreprocessor::new(base_path, IpType::V6);
     preprocessor.preprocess_files();
 
-    let merger = Merger::new(&config);
-    merger.merge_data();
 
-    let deduplicator = Deduplicator::new(&config);
-    deduplicator.deduplicate_edges();
 
-    let grapher = Grapher::new(&config);
-    grapher.collect_graph_stats();
+    // let configs = files_to_process
+    //     .map(|path| GraphBuilderParameters::new(
+    //         /* read_compressed: */ false,
+    //         IpType::V4,
+    //         "../../01_yarrp_scan/input/v4",
+    //         "../../01_yarrp_scan/output/v4/intermediate",
+    //         "../../01_yarrp_scan/output/v4",
+    //         FeatureToggle {
+    //             should_preprocess: false,
+    //             should_merge: false,
+    //             should_persist_index: false,
+    //             should_persist_edges: false,
+    //             should_deduplicate_edges: false,
+    //             should_compute_graph: true,
+    //             graph_parameters_to_compute: GraphParametersToCompute {
+    //                 betweenness: false,
+    //                 degree: true,
+    //             }
+    //         }
+    //     ));
+}
+
+fn run(configs: &Vec<GraphBuilderParameters>) {
+    let mut counter = 1;
+    for config in configs {
+        info!("############## Running on config {}/{} ##############", counter, configs.len());
+        info!("Expecting to read IP{:?} addresses.", &config.address_type());
+
+        config.print_path_info();
+
+        let mut preprocessor = YarrpDataPreprocessor::new(&config);
+        preprocessor.preprocess_files();
+
+        let merger = Merger::new(&config);
+        merger.merge_data();
+
+        let deduplicator = Deduplicator::new(&config);
+        deduplicator.deduplicate_edges();
+
+        let grapher = Grapher::new(&config);
+        grapher.collect_graph_stats();
+
+        info!("############## Finished with run {}/{} ##############", counter, configs.len());
+        counter += 1;
+    }
 }

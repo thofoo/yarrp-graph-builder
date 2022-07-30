@@ -15,7 +15,7 @@ impl Grapher {
     }
 
     pub fn collect_graph_stats(&self) {
-        if !self.config.should_compute_graph() {
+        if !self.config.enabled_features().should_compute_graph() {
             info!("Graph computation flag is FALSE - skipping graph computation.");
             return;
         }
@@ -34,7 +34,7 @@ impl Grapher {
     fn calculate_graph_parameters(&self, graph: Graph) {
         let mut graph: Graph = graph;
 
-        let should_compute = self.config.graph_parameters_to_compute();
+        let should_compute = self.config.enabled_features().graph_parameters_to_compute();
         if should_compute.betweenness {
             graph = self.calculate_betweenness(graph);
         }

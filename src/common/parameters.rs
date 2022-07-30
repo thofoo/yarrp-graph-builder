@@ -10,7 +10,6 @@ pub const NODE_INDEX_PATH: &str = "yarrp.node_index.bin";
 
 #[derive(Clone, Debug)]
 pub struct OutputPaths {
-    _root: PathBuf,
     mapping: PathBuf,
     edges: PathBuf,
     edges_deduplicated: PathBuf,
@@ -41,20 +40,49 @@ impl OutputPaths {
 }
 
 #[derive(Clone)]
+pub struct FeatureToggle {
+    pub should_preprocess: bool,
+    pub should_merge: bool,
+    pub should_persist_index: bool,
+    pub should_persist_edges: bool,
+    pub should_deduplicate_edges: bool,
+    pub should_compute_graph: bool,
+    pub graph_parameters_to_compute: GraphParametersToCompute,
+}
+
+impl FeatureToggle {
+    pub fn should_preprocess(&self) -> bool {
+        self.should_preprocess
+    }
+    pub fn should_merge(&self) -> bool {
+        self.should_merge
+    }
+    pub fn should_persist_index(&self) -> bool {
+        self.should_persist_index
+    }
+    pub fn should_persist_edges(&self) -> bool {
+        self.should_persist_edges
+    }
+    pub fn should_deduplicate_edges(&self) -> bool {
+        self.should_deduplicate_edges
+    }
+    pub fn should_compute_graph(&self) -> bool {
+        self.should_compute_graph
+    }
+
+    pub fn graph_parameters_to_compute(&self) -> &GraphParametersToCompute {
+        &self.graph_parameters_to_compute
+    }
+}
+
+#[derive(Clone)]
 pub struct GraphBuilderParameters {
     read_compressed: bool,
     address_type: IpType,
     input_path: PathBuf,
     intermediary_file_path_original: PathBuf,
     intermediary_file_path: PathBuf,
-    should_preprocess: bool,
-    should_merge: bool,
-    should_persist_index: bool,
-    should_persist_edges: bool,
-    should_deduplicate_edges: bool,
-    should_compute_graph: bool,
-    graph_parameters_to_compute: GraphParametersToCompute,
-
+    enabled_features: FeatureToggle,
     output_paths: OutputPaths,
 }
 
@@ -71,13 +99,7 @@ impl GraphBuilderParameters {
         input_folder: &str,
         intermediate_folder: &str,
         output_folder: &str,
-        should_preprocess: bool,
-        should_merge: bool,
-        should_persist_index: bool,
-        should_persist_edges: bool,
-        should_deduplicate_edges: bool,
-        should_compute_graph: bool,
-        graph_parameters_to_compute: GraphParametersToCompute,
+        enabled_features: FeatureToggle,
     ) -> GraphBuilderParameters {
         let input_path = Path::new(input_folder).to_path_buf();
         let intermediary_file_path = Path::new(intermediate_folder).to_path_buf();
@@ -93,30 +115,20 @@ impl GraphBuilderParameters {
             exit(1);
         }
 
-        if !intermediary_file_path.exists() {
-            error!("Specified intermediate path does not exist");
-            exit(1);
-        }
-
-        if !intermediary_file_path.is_dir() {
+        if intermediary_file_path.exists() && !intermediary_file_path.is_dir() {
             error!("Specified intermediate path is not a directory");
             exit(1);
         }
 
-        if !output_path.exists() {
-            error!("Specified output path does not exist");
-            exit(1);
-        }
-
-        if !output_path.is_dir() {
+        if output_path.exists() && !output_path.is_dir() {
             error!("Specified output path is not a directory");
             exit(1);
         }
 
         fs::create_dir_all(&intermediary_file_path).expect("Could not create intermediary file paths");
+        fs::create_dir_all(&output_path).expect("Could not create output file paths");
 
         let output_paths = OutputPaths {
-            _root: output_path.to_path_buf(),
             mapping: output_path.to_path_buf().join(Path::new("mapping.csv")),
             edges: output_path.to_path_buf().join(Path::new("edges.csv")),
             edges_deduplicated: output_path.to_path_buf().join(Path::new("edges_deduplicated.csv")),
@@ -131,14 +143,8 @@ impl GraphBuilderParameters {
             input_path,
             intermediary_file_path_original: intermediary_file_path.to_path_buf(),
             intermediary_file_path,
+            enabled_features,
             output_paths,
-            should_preprocess,
-            should_merge,
-            should_persist_index,
-            should_persist_edges,
-            should_deduplicate_edges,
-            should_compute_graph,
-            graph_parameters_to_compute,
         }
     }
 
@@ -172,27 +178,8 @@ impl GraphBuilderParameters {
         &self.intermediary_file_path
     }
 
-    pub fn should_preprocess(&self) -> bool {
-        self.should_preprocess
-    }
-    pub fn should_merge(&self) -> bool {
-        self.should_merge
-    }
-    pub fn should_persist_index(&self) -> bool {
-        self.should_persist_index
-    }
-    pub fn should_persist_edges(&self) -> bool {
-        self.should_persist_edges
-    }
-    pub fn should_deduplicate_edges(&self) -> bool {
-        self.should_deduplicate_edges
-    }
-    pub fn should_compute_graph(&self) -> bool {
-        self.should_compute_graph
-    }
-
-    pub fn graph_parameters_to_compute(&self) -> &GraphParametersToCompute {
-        &self.graph_parameters_to_compute
+    pub fn enabled_features(&self) -> &FeatureToggle {
+        &self.enabled_features
     }
 
     pub fn output_paths(&self) -> &OutputPaths {

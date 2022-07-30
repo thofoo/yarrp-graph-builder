@@ -19,7 +19,7 @@ impl Deduplicator {
     }
 
     pub fn deduplicate_edges(&self) {
-        if !self.config.should_deduplicate_edges() {
+        if !self.config.enabled_features().should_deduplicate_edges() {
             info!("Deduplication flag is FALSE - skipping deduplication.");
             return;
         }

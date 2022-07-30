@@ -117,7 +117,7 @@ fn construct_error(data_label: &str, info: &str) -> String {
     format!("Error while parsing {}: '{}'", data_label, info)
 }
 
-fn ipv4_to_numeric(parsed_ip: Ipv4Addr) -> u32 {
+pub fn ipv4_to_numeric(parsed_ip: Ipv4Addr) -> u32 {
     let mut shift = 4;
     return parsed_ip.octets()
         .iter()
@@ -127,7 +127,7 @@ fn ipv4_to_numeric(parsed_ip: Ipv4Addr) -> u32 {
         });
 }
 
-fn ipv6_to_numeric(parsed_ip: Ipv6Addr) -> u128 {
+pub fn ipv6_to_numeric(parsed_ip: Ipv6Addr) -> u128 {
     let mut shift = 16;
     return parsed_ip.octets()
         .iter()

@@ -23,7 +23,7 @@ impl Merger {
     }
 
     pub fn merge_data(self) {
-        if !self.config.should_merge() {
+        if !self.config.enabled_features().should_merge() {
             info!("Merging flag is FALSE - skipping merging.");
             return;
         }
@@ -59,11 +59,12 @@ impl Merger {
         let max_known_node_id = self.write_node_mapping(index_path, &mut index_writer);
         let max_unknown_node_id = self.write_edge_mapping(dirs_to_process, &mut edge_writer);
 
-        let has_proper_node_id_values = self.config.should_persist_index() && self.config.should_persist_edges();
+        let features = self.config.enabled_features();
+        let has_proper_node_id_values = features.should_persist_index() && features.should_persist_edges();
         if has_proper_node_id_values {
             let mut max_node_ids_writer = csv::Writer::from_path(&self.config.output_paths().max_node_ids())
                 .expect(&format!(
-                    "Could not create file for storing node mapping at {}", max_node_id_path.to_str().unwrap()
+                    "Could not create file for storing max node ids at {}", max_node_id_path.to_str().unwrap()
                 ));
 
             let max_node_ids = MaxNodeIds {
@@ -75,7 +76,7 @@ impl Merger {
     }
 
     fn write_node_mapping(&self, index_path: PathBuf, index_writer: &mut Writer<File>) -> usize {
-        if !self.config.should_persist_index() {
+        if !self.config.enabled_features().should_persist_index() {
             info!("Index persistence flag is FALSE - skipping index persistence.");
             return 0;
         }
@@ -112,7 +113,7 @@ impl Merger {
     }
 
     fn write_edge_mapping(&self, dirs_to_process: Vec<DirEntry>, edge_writer: &mut Writer<File>) -> usize {
-        if !self.config.should_persist_edges() {
+        if !self.config.enabled_features().should_persist_edges() {
             info!("Edge persistence flag is FALSE - skipping edge persistence.");
             return 0;
         }

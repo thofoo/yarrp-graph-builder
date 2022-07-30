@@ -11,17 +11,17 @@ use crate::GraphBuilderParameters;
 
 use crate::preprocess::{parser, file_util};
 
-pub struct Preprocessor {
+pub struct YarrpDataPreprocessor {
     config: GraphBuilderParameters,
 }
 
-impl Preprocessor {
-    pub fn new(config: &GraphBuilderParameters) -> Preprocessor {
-        Preprocessor { config: config.clone() }
+impl YarrpDataPreprocessor {
+    pub fn new(config: &GraphBuilderParameters) -> YarrpDataPreprocessor {
+        YarrpDataPreprocessor { config: config.clone() }
     }
 
     pub fn preprocess_files(&mut self) {
-        if !self.config.should_preprocess() {
+        if !self.config.enabled_features().should_preprocess() {
             info!("Preprocessing flag is FALSE - skipping preprocessing.");
             return;
         }
@@ -92,7 +92,7 @@ impl Preprocessor {
         let data = if self.config.read_compressed() {
             file_util::read_bzip2_lines(path).expect(error_string)
         } else {
-            std::fs::read_to_string(path.to_str().unwrap()).expect(error_string)
+            fs::read_to_string(path.to_str().unwrap()).expect(error_string)
         };
 
         debug!("Finished reading in data for {}.", file_name);
