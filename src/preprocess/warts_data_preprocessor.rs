@@ -56,6 +56,8 @@ impl WartsDataPreprocessor {
             let mut missing_node_counter: i64 = -1;
             let mut missing_node_memory: HashMap<i64, i64> = HashMap::new();
 
+            edge_writer.serialize(("from", "to")).unwrap();
+
             let objects = file_util::read_warts_from_gzip(file.path());
             for object in objects {
                 match object {
