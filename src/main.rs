@@ -30,45 +30,56 @@ fn main() {
     info!("Let's go!");
 
     // TODO get from config file
-    let run_pipeline_on_yarrp_scan = false;
-    let run_pipeline_on_caida_scans = true;
+    let run_pipeline_on_yarrp_scan = true;
+    let run_pipeline_on_caida_scans = false;
+
+    let feature_toggle = FeatureToggle {
+        should_preprocess: false,
+        should_merge: false,
+        should_persist_index: false,
+        should_persist_edges: false,
+        should_deduplicate_edges: false,
+        should_compute_graph: true,
+        graph_parameters_to_compute: GraphParametersToCompute {
+            betweenness: true,
+            degree: true,
+        }
+    };
 
     if run_pipeline_on_yarrp_scan {
-        run_on_yarrp_scan();
-    }
-    if run_pipeline_on_caida_scans {
-        run_on_caida_scans();
+        run_on_yarrp_scan(feature_toggle);
+    } else if run_pipeline_on_caida_scans {
+        run_on_caida_scans(feature_toggle);
+    } else {
+        info!("Nothing to do! Please recheck the configuration.");
     }
 }
 
-fn run_on_yarrp_scan() {
+fn run_on_yarrp_scan(feature_toggle: FeatureToggle) {
     let config = GraphBuilderParameters::new(
         /* read_compressed: */ false,
-        IpType::V4,
-        "../../01_yarrp_scan/input/v4",
-        "../../01_yarrp_scan/output/v4/intermediate",
-        "../../01_yarrp_scan/output/v4",
-        FeatureToggle {
-            should_preprocess: false,
-            should_merge: false,
-            should_persist_index: false,
-            should_persist_edges: false,
-            should_deduplicate_edges: false,
-            should_compute_graph: true,
-            graph_parameters_to_compute: GraphParametersToCompute {
-                betweenness: false,
-                degree: true,
-            }
-        }
+        IpType::V6,
+        "../../01_yarrp_scan/input/v6",
+        "../../01_yarrp_scan/output/v6/intermediate",
+        "../../01_yarrp_scan/output/v6",
+        feature_toggle
     );
+
+    config.print_path_info();
+
+    let mut preprocessor = YarrpDataPreprocessor::new(&config);
+    preprocessor.preprocess_files();
+
+    let merger = Merger::new(&config);
+    merger.merge_data();
 
     let mut configs = Vec::new();
     configs.push(config);
     run(&configs);
 }
 
-fn run_on_caida_scans() {
-    let base_path = Path::new("../../caida-ip-scans/v6/").to_path_buf();
+fn run_on_caida_scans(feature_toggle: FeatureToggle) {
+    let base_path = Path::new("../../caida-ip-scans/v4/").to_path_buf();
 
     let preprocessor = WartsDataPreprocessor::new(base_path.to_path_buf(), IpType::V6);
     preprocessor.preprocess_files();
@@ -82,21 +93,10 @@ fn run_on_caida_scans() {
         .map(|path| GraphBuilderParameters::new(
             /* read_compressed: */ false,
             IpType::V4,
-            "/",
-            "/",
+            "/does_not_matter",
+            "/does_not_matter",
             path.path().to_str().unwrap(),
-            FeatureToggle {
-                should_preprocess: false,
-                should_merge: false,
-                should_persist_index: false,
-                should_persist_edges: false,
-                should_deduplicate_edges: true,
-                should_compute_graph: true,
-                graph_parameters_to_compute: GraphParametersToCompute {
-                    betweenness: true,
-                    degree: true,
-                }
-            }
+            feature_toggle.clone()
         ))
         .collect();
 
@@ -108,14 +108,6 @@ fn run(configs: &Vec<GraphBuilderParameters>) {
     for config in configs {
         info!("############## Running on config {}/{} ##############", counter, configs.len());
         info!("Expecting to read IP{:?} addresses.", &config.address_type());
-
-        config.print_path_info();
-
-        let mut preprocessor = YarrpDataPreprocessor::new(&config);
-        preprocessor.preprocess_files();
-
-        let merger = Merger::new(&config);
-        merger.merge_data();
 
         let deduplicator = Deduplicator::new(&config);
         deduplicator.deduplicate_edges();
