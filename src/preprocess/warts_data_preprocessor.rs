@@ -1,51 +1,45 @@
 use std::fs;
 use std::fs::{DirEntry, File};
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
-use std::path::PathBuf;
 use csv::Writer;
 use hashbrown::HashMap;
 use log::{debug, info};
 use warts::{Address, Object};
 use crate::common::structs::data::MaxNodeIds;
-use crate::IpType;
+use crate::{GraphBuilderParameters, IpType};
 use crate::preprocess::file_util;
 use crate::preprocess::parser::{ipv4_to_numeric, ipv6_to_numeric};
 
 pub struct WartsDataPreprocessor {
-    base_dir: PathBuf,
-    ip_type: IpType,
+    config: GraphBuilderParameters,
 }
 
 impl WartsDataPreprocessor {
-    pub fn new(base_dir: PathBuf, ip_type: IpType) -> WartsDataPreprocessor {
-        WartsDataPreprocessor { base_dir, ip_type }
+    pub fn new(config: &GraphBuilderParameters) -> WartsDataPreprocessor {
+        WartsDataPreprocessor { config: config.clone() }
     }
 
     pub fn preprocess_files(&self) {
-        let input_path = self.base_dir.join("input");
+        if !self.config.enabled_features().should_preprocess() {
+            info!("Preprocessing flag is FALSE - skipping preprocessing.");
+            return;
+        }
+
+        let input_path = self.config.input_path();
 
         let files = fs::read_dir(&input_path).unwrap();
 
-        let files_to_process = files
+        let files_to_process: Vec<DirEntry> = files
             .map(|entry| entry.unwrap())
             .filter(|i| i.path().is_file())
-            .filter(|i| i.path().to_str().unwrap().ends_with(".warts.gz"));
+            .filter(|i| i.path().to_str().unwrap().ends_with(".warts.gz"))
+            .collect();
 
-        for file in files_to_process {
-            self.process_single_file(&file);
-        }
-    }
+        let mapping_file_name = self.config.output_paths().mapping();
+        let edges_file_name = self.config.output_paths().edges();
+        let max_node_file_name = self.config.output_paths().max_node_ids();
 
-    fn process_single_file(&self, file: &DirEntry) {
-        let output_dir = &self.base_dir.join("output")
-            .join(file.file_name());
-        fs::create_dir_all(output_dir).unwrap();
-
-        let mapping_file_name = &output_dir.join("mapping.csv");
-        let edges_file_name = &output_dir.join("edges.csv");
-        let max_node_file_name = &output_dir.join("max_node_ids.csv");
-
-        let mut index_writer = csv::Writer::from_path(mapping_file_name)
+        let index_writer = csv::Writer::from_path(mapping_file_name)
             .expect(&format!(
                 "Could not create file for storing node mapping at {}", mapping_file_name.to_str().unwrap()
             ));
@@ -63,15 +57,43 @@ impl WartsDataPreprocessor {
         let mut missing_node_counter: i64 = -1;
         let mut missing_node_memory: HashMap<i64, i64> = HashMap::new();
 
-        edge_writer.serialize(("from", "to")).unwrap();
 
+        let mut file_processed_counter = 1;
+        edge_writer.serialize(("from", "to")).unwrap();
+        for file in &files_to_process {
+            info!("Processing {} / {} files", file_processed_counter, files_to_process.len());
+            self.process_single_file(
+                &file,
+                &mut index,
+                &mut counter,
+                &mut missing_node_counter,
+                &mut missing_node_memory,
+                &mut edge_writer
+            );
+            file_processed_counter += 1;
+        }
+
+        info!("Writing node mapping to disk...");
+        self.write_node_mapping_to_disk(index_writer, index);
+        Self::write_max_node_ids_to_disk(&mut max_node_ids_writer, counter, missing_node_counter);
+    }
+
+    fn process_single_file(
+        &self,
+        file: &DirEntry,
+        index: &mut HashMap<u128, i64>,
+        counter: &mut i64,
+        missing_node_counter: &mut i64,
+        missing_node_memory: &mut HashMap<i64, i64>,
+        edge_writer: &mut Writer<File>,
+    ) {
         let objects = file_util::read_warts_from_gzip(file.path());
         for object in objects {
             match object {
                 Object::Traceroute(t) => {
                     let src_addr = uint_from_raw_address(t.src_addr.unwrap());
 
-                    let src_id = get_or_put(&mut index, src_addr, &mut counter);
+                    let src_id = get_or_put(index, src_addr, counter);
 
                     let mut previous_node = src_id;
                     let mut previous_hop = 0;
@@ -85,26 +107,26 @@ impl WartsDataPreprocessor {
                             Address::IPv6(_, _) => { /* we can proceed */ }
                             Address::Reference(reference) => {
                                 debug!("Got REFERENCE for traceroute addr at TTL {}: {}", current_hop, reference);
-                                continue
+                                continue;
                             }
                             Address::Ethernet(e1, e2) => {
-                                info!("Got ETHERNET for traceroute addr at TTL {}: {} {:?}", current_hop, e1, e2);
-                                continue
+                                debug!("Got ETHERNET for traceroute addr at TTL {}: {} {:?}", current_hop, e1, e2);
+                                continue;
                             }
                             Address::FireWire(f1, f2) => {
-                                info!("Got FIREWIRE for traceroute addr at TTL {}: {} {:?}", current_hop, f1, f2);
-                                continue
+                                debug!("Got FIREWIRE for traceroute addr at TTL {}: {} {:?}", current_hop, f1, f2);
+                                continue;
                             }
                         }
                         let addr = uint_from_raw_address(hop_addr_object);
-                        let addr_id = get_or_put(&mut index, addr, &mut counter);
+                        let addr_id = get_or_put(index, addr, counter);
 
                         if current_hop > previous_hop + 1 {
                             let missing_hops = (current_hop - 1) - (previous_hop + 1);
                             for _ in 0..missing_hops {
                                 if !missing_node_memory.contains_key(&previous_node) {
-                                    missing_node_memory.insert(previous_node, missing_node_counter);
-                                    missing_node_counter -= 1;
+                                    missing_node_memory.insert(previous_node, *missing_node_counter);
+                                    *missing_node_counter -= 1;
                                 }
 
                                 let new_node_id = *missing_node_memory.get(&previous_node).unwrap();
@@ -120,27 +142,23 @@ impl WartsDataPreprocessor {
                         previous_hop = current_hop;
                     }
                 }
-                _ => info!("Encountered non-traceroute entry: {:?}", object)
+                _ => debug!("Encountered non-traceroute entry: {:?}", object)
             }
         }
-
-        info!("Writing node mapping to disk...");
-        self.write_node_mapping_to_disk(index_writer, &mut index);
-        Self::write_max_node_ids_to_disk(&mut max_node_ids_writer, counter, missing_node_counter);
     }
 
-    fn write_node_mapping_to_disk(&self, mut index_writer: Writer<File>, index: &mut HashMap<u128, i64>) {
+    fn write_node_mapping_to_disk(&self, mut index_writer: Writer<File>, index: HashMap<u128, i64>) {
         index_writer.serialize(("ip", "node_id")).unwrap();
         index.iter()
-        .map(|(&ip, &node_id)| {
-            let ip_addr = if self.ip_type == IpType::V4 {
-                IpAddr::V4(Ipv4Addr::from(u32::try_from(ip).unwrap()))
-            } else {
-                IpAddr::V6(Ipv6Addr::from(ip))
-            };
-            (ip_addr, node_id)
-        })
-        .for_each(|row| index_writer.serialize(row).unwrap());
+            .map(|(&ip, &node_id)| {
+                let ip_addr = if self.config.address_type() == &IpType::V4 {
+                    IpAddr::V4(Ipv4Addr::from(u32::try_from(ip).unwrap()))
+                } else {
+                    IpAddr::V6(Ipv6Addr::from(ip))
+                };
+                (ip_addr, node_id)
+            })
+            .for_each(|row| index_writer.serialize(row).unwrap());
 
         index_writer.flush().unwrap();
     }

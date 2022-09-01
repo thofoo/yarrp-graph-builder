@@ -46,10 +46,6 @@ impl <T: Clone> SparseOffsetList<T> {
     pub fn iter(&self) -> Iter<'_, i64, T> {
         self.map.iter()
     }
-
-    pub fn total_nodes(&self) -> usize {
-        self.map.keys().len()
-    }
 }
 
 impl <T: Clone> Index<i64> for SparseOffsetList<T> {

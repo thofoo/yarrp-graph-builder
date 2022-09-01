@@ -35,11 +35,11 @@ impl Grapher {
         let mut graph: Graph = graph;
 
         let should_compute = self.config.enabled_features().graph_parameters_to_compute();
-        if should_compute.betweenness {
-            graph = self.calculate_betweenness(graph);
-        }
         if should_compute.degree {
-            self.calculate_degree(graph);
+            graph = self.calculate_degree(graph);
+        }
+        if should_compute.betweenness {
+            self.calculate_betweenness(graph);
         }
         // TODO add more parameter types here
     }

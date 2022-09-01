@@ -88,8 +88,8 @@ pub struct GraphBuilderParameters {
 
 #[derive(Clone)]
 pub struct GraphParametersToCompute {
-    pub betweenness: bool,
-    pub degree: bool
+    pub degree: bool,
+    pub betweenness: bool
 }
 
 impl GraphBuilderParameters {

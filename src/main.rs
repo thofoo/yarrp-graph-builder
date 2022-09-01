@@ -1,7 +1,5 @@
 extern crate core;
 
-use std::fs;
-use std::path::Path;
 use env_logger::Env;
 use log::{info, LevelFilter};
 use crate::common::parameters::{FeatureToggle, GraphBuilderParameters, GraphParametersToCompute};
@@ -30,8 +28,8 @@ fn main() {
     info!("Let's go!");
 
     // TODO get from config file
-    let run_pipeline_on_yarrp_scan = true;
-    let run_pipeline_on_caida_scans = false;
+    let run_pipeline_on_yarrp_scan = false;
+    let run_pipeline_on_caida_scans = true;
 
     let feature_toggle = FeatureToggle {
         should_preprocess: false,
@@ -41,8 +39,8 @@ fn main() {
         should_deduplicate_edges: false,
         should_compute_graph: true,
         graph_parameters_to_compute: GraphParametersToCompute {
-            betweenness: true,
             degree: true,
+            betweenness: true,
         }
     };
 
@@ -58,10 +56,10 @@ fn main() {
 fn run_on_yarrp_scan(feature_toggle: FeatureToggle) {
     let config = GraphBuilderParameters::new(
         /* read_compressed: */ false,
-        IpType::V6,
-        "../../01_yarrp_scan/input/v6",
-        "../../01_yarrp_scan/output/v6/intermediate",
-        "../../01_yarrp_scan/output/v6",
+        IpType::V4,
+        "../../01_yarrp_scan/input/v4",
+        "../../01_yarrp_scan/output/v4/intermediate",
+        "../../01_yarrp_scan/output/v4",
         feature_toggle
     );
 
@@ -73,49 +71,35 @@ fn run_on_yarrp_scan(feature_toggle: FeatureToggle) {
     let merger = Merger::new(&config);
     merger.merge_data();
 
-    let mut configs = Vec::new();
-    configs.push(config);
-    run(&configs);
+    run(config);
 }
 
 fn run_on_caida_scans(feature_toggle: FeatureToggle) {
-    let base_path = Path::new("../../caida-ip-scans/v4/").to_path_buf();
+    let config = GraphBuilderParameters::new(
+        /* read_compressed: */ false,
+        IpType::V4,
+        "../../caida-ip-scans/v4/20210802/input",
+        "../../caida-ip-scans/v4/20210802/output/intermediate",
+        "../../caida-ip-scans/v4/20210802/output",
+        feature_toggle
+    );
 
-    let preprocessor = WartsDataPreprocessor::new(base_path.to_path_buf(), IpType::V6);
+    config.print_path_info();
+
+    let preprocessor = WartsDataPreprocessor::new(&config);
     preprocessor.preprocess_files();
 
-    let output_path = base_path.join("output");
-    let dirs_to_process = fs::read_dir(&output_path).unwrap()
-        .map(|entry| entry.unwrap())
-        .filter(|i| i.path().is_dir());
-
-    let configs = dirs_to_process
-        .map(|path| GraphBuilderParameters::new(
-            /* read_compressed: */ false,
-            IpType::V4,
-            "/does_not_matter",
-            "/does_not_matter",
-            path.path().to_str().unwrap(),
-            feature_toggle.clone()
-        ))
-        .collect();
-
-    run(&configs);
+    run(config);
 }
 
-fn run(configs: &Vec<GraphBuilderParameters>) {
-    let mut counter = 1;
-    for config in configs {
-        info!("############## Running on config {}/{} ##############", counter, configs.len());
-        info!("Expecting to read IP{:?} addresses.", &config.address_type());
+fn run(config: GraphBuilderParameters) {
+    info!("Expecting to read IP{:?} addresses.", &config.address_type());
 
-        let deduplicator = Deduplicator::new(&config);
-        deduplicator.deduplicate_edges();
+    let deduplicator = Deduplicator::new(&config);
+    deduplicator.deduplicate_edges();
 
-        let grapher = Grapher::new(&config);
-        grapher.collect_graph_stats();
+    let grapher = Grapher::new(&config);
+    grapher.collect_graph_stats();
 
-        info!("############## Finished with run {}/{} ##############", counter, configs.len());
-        counter += 1;
-    }
+    info!("############## Finished ##############");
 }

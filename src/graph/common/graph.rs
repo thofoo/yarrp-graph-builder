@@ -84,7 +84,7 @@ impl Graph {
         let mut edges_reader = csv::Reader::from_path(edges_path).unwrap();
         edges_reader.deserialize()
             .skip(1)
-            .take_while(|edge| edge.is_ok())
+            .filter(|edge| edge.is_ok())
             .for_each(|edge: Result<CsvEdge, _>| {
                 let data = edge.unwrap();
                 let data_from = data.from;

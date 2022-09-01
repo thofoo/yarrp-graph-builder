@@ -3,30 +3,12 @@ use std::collections::HashSet;
 use crate::graph::common::graph::Graph;
 use crate::graph::common::sparse_offset_list::SparseOffsetList;
 
-pub struct DegreeMemory {
-    memory: SparseOffsetList<DegreeCount>,
+pub struct DegreeCalculator {
 }
 
-impl DegreeMemory {
-    pub fn new() -> DegreeMemory {
-        DegreeMemory { memory: SparseOffsetList::new(DegreeCount::new()) }
-    }
-
-    pub fn set_in_out_count(&mut self, id: i64, count: usize) -> bool {
-        // we just increment "in" by one every time we visit the node.
-        // we do both "in" and "out" at once to avoid the additional lookup
-
-        let mut entry = &mut self.memory[id];
-        if id != 0 {
-            entry.d_in += 1;
-        }
-
-        let is_new = entry.d_out == 0;
-        if is_new {
-            entry.d_out = count as u32;
-        }
-
-        is_new
+impl DegreeCalculator {
+    pub fn new() -> DegreeCalculator {
+        DegreeCalculator {  }
     }
 
     pub fn collect_values_for_node(&self, node_id: i64, graph: &mut Graph) -> DegreeValues {
@@ -34,9 +16,8 @@ impl DegreeMemory {
 
         let mut results = DegreeValues::new(node_id);
 
-        let degrees = &self.memory[node_id];
-        results.d_in = degrees.d_in;
-        results.d_out = degrees.d_out;
+        results.d_in = graph.edges_reversed()[node_id].len() as u32;
+        results.d_out = graph.edges()[node_id].len() as u32;
 
         results.and_in = self.average_neighbor_degree(node_id, graph, Direction::IN);
         results.and_out = self.average_neighbor_degree(node_id, graph, Direction::OUT);
@@ -139,26 +120,6 @@ impl DegreeMemory {
     }
 }
 
-struct DegreeCount {
-    d_in: u32,
-    d_out: u32,
-}
-
-impl DegreeCount {
-    fn new() -> DegreeCount {
-        DegreeCount { d_in: 0, d_out: 0 }
-    }
-}
-
-impl Clone for DegreeCount {
-    fn clone(&self) -> Self {
-        DegreeCount {
-            d_in: self.d_in,
-            d_out: self.d_out,
-        }
-    }
-}
-
 pub struct DegreeValues {
     node_id: i64,
     d_in: u32,
@@ -198,6 +159,10 @@ impl DegreeValues {
             self.iand_out,
             self.iand_total,
         )
+    }
+
+    pub fn is_non_zero(&self) -> bool {
+        !(self.d_in == 0 && self.d_out == 0)
     }
 }
 
