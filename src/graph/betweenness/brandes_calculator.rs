@@ -1,23 +1,42 @@
 use std::collections::{HashSet, VecDeque};
+use std::fs;
 use std::fs::File;
+use std::path::PathBuf;
 
 use csv::Writer;
 use log::info;
 use pbr::ProgressBar;
 use rayon::prelude::*;
+use serde::{Deserialize, Serialize};
 
 use crate::graph::betweenness::brandes_memory::BrandesMemory;
 use crate::graph::common::graph::Graph;
 use crate::graph::common::sparse_offset_list::SparseOffsetList;
+use crate::preprocess::file_util::write_to_file;
+
+#[derive(Serialize)]
+#[derive(Deserialize)]
+struct BrandesThreadState {
+    index: u32,
+    counter: u32,
+    local_c_list: SparseOffsetList<f64>,
+}
 
 pub struct BrandesCalculator {
     graph: Graph,
+    intermediate_folder_path: PathBuf,
+    max_thread_count: u16,
     writer: Writer<File>,
 }
 
 impl BrandesCalculator {
-    pub fn new(graph: Graph, writer: Writer<File>) -> BrandesCalculator {
-        BrandesCalculator { graph, writer }
+    pub fn new(graph: Graph, intermediate_folder_path: &PathBuf, max_thread_count: u16, writer: Writer<File>) -> BrandesCalculator {
+        BrandesCalculator {
+            graph,
+            intermediate_folder_path: intermediate_folder_path.clone(),
+            max_thread_count,
+            writer
+        }
     }
 
     pub fn calculate_and_persist(&mut self) {
@@ -41,34 +60,33 @@ impl BrandesCalculator {
 
         let mut partial_results: Vec<SparseOffsetList<f64>> = Vec::new();
 
-        // Make sure to not use too many threads, as that could lead to out-of-memory errors if you
-        // have plenty of input data (=> the thread results are piling up before they are collected)
-        // Good baseline is to use the number of threads available on your machine
-        let mut thread_id = 0;
-        let num_of_threads = 8.0;
+        let mut thread_id: u32 = 0;
+        let num_of_threads = self.max_thread_count as f64;
         nodes.chunks(((nodes.len() as f64) / num_of_threads).ceil() as usize)
             .map(|chunk| {
                 let result = (chunk, thread_id);
                 thread_id += 1;
                 result
             })
-            .collect::<Vec<(&[i64], i32)>>()
+            .collect::<Vec<(&[i64], u32)>>()
             .into_par_iter()
             .map(|(nodes_to_visit, index)| {
-                let mut local_c_list = SparseOffsetList::new(0.0);
-                let mut counter = 0;
+                let total_node_count = nodes_to_visit.len();
 
-                let node_count = nodes_to_visit.len();
-
-                let thread_info = format!("Thread {}: {} nodes", index, node_count);
+                let thread_info = format!("Thread {}: {} nodes", index, total_node_count);
                 info!("{}", thread_info);
 
-                for &s in nodes_to_visit {
+                let (mut local_c_list, mut counter) = self.restore_or_create_state(index);
+
+                Self::print_thread_progress(index, counter, total_node_count);
+
+                let nodes_left_to_visit = &nodes_to_visit[(counter as usize)..];
+                for &s in nodes_left_to_visit {
                     self.calculate_delta_for_node(edges, &mut local_c_list, s);
                     counter += 1;
                     if counter % 1_000 == 0 {
-                        let thread_info = format!("Thread {}: {} / {}", index, counter, node_count);
-                        info!("{}", thread_info);
+                        local_c_list = self.persist_current_state(index, counter, local_c_list);
+                        Self::print_thread_progress(index, counter, total_node_count);
                     }
                 }
 
@@ -89,6 +107,72 @@ impl BrandesCalculator {
         progress_bar.set(result_count);
 
         global_c_list
+    }
+
+    fn print_thread_progress(index: u32, counter: u32, total_node_count: usize) {
+        let thread_info = format!("Thread {}: {} / {}", index, counter, total_node_count);
+        info!("{}", thread_info);
+    }
+
+    fn restore_or_create_state(&self, index: u32) -> (SparseOffsetList<f64>, u32) {
+        let file = self.get_state_path_for_index(index);
+        if !file.exists() {
+            (SparseOffsetList::new(0.0), 0)
+        } else {
+            let state: BrandesThreadState = Self::read_from_file(&file).unwrap_or(
+                Self::get_fresh_thread_state(index)
+            );
+
+            (state.local_c_list, state.counter)
+        }
+    }
+
+    fn persist_current_state(&self, index: u32, counter: u32, local_c_list: SparseOffsetList<f64>) -> SparseOffsetList<f64> {
+        let file = self.get_state_path_for_index(index);
+
+        let state = BrandesThreadState {
+            index, counter, local_c_list
+        };
+
+        write_to_file(&file, &state);
+
+        state.local_c_list
+    }
+
+    fn get_state_path_for_index(&self, index: u32) -> PathBuf {
+        let directory = self.intermediate_folder_path.join("betweenness");
+        fs::create_dir_all(&directory).expect("Could not create intermediary directory for betweenness");
+
+        directory.join(format!("thread_{}.bin", index))
+    }
+
+    fn read_from_file(path: &PathBuf) -> Option<BrandesThreadState> {
+        let f = File::open(path);
+        if f.is_ok() {
+            let file = f.unwrap();
+
+            let data = bincode::deserialize_from(file);
+
+            if data.is_ok() {
+                Some(data.unwrap())
+            } else {
+                info!(
+                    "File at {} does not contain or contains invalid thread state data",
+                    path.to_str().unwrap()
+                );
+                None
+            }
+        } else {
+            None
+        }
+    }
+
+    fn get_fresh_thread_state(index: u32) -> BrandesThreadState {
+        BrandesThreadState {
+            index,
+            counter: 0,
+            local_c_list: SparseOffsetList::new(0.0),
+        }
     }
 
     pub fn calculate_delta_for_node(

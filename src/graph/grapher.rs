@@ -53,7 +53,12 @@ impl Grapher {
                 &self.config.output_paths().betweenness().to_str().unwrap()
             ));
 
-        let mut calculator = BrandesCalculator::new(graph, betweenness_writer);
+        let mut calculator = BrandesCalculator::new(
+            graph,
+            self.config.intermediary_file_path(),
+            self.config.enabled_features().max_thread_count,
+            betweenness_writer
+        );
         calculator.calculate_and_persist();
         calculator.graph()
     }

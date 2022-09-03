@@ -1,13 +1,16 @@
 use std::ops::{Index, IndexMut};
 use hashbrown::hash_map::Iter;
 use hashbrown::HashMap;
+use serde::{Deserialize, Serialize};
 
-pub struct SparseOffsetList<T: Clone> {
+#[derive(Serialize)]
+#[derive(Deserialize)]
+pub struct SparseOffsetList<T: Clone + Serialize> {
     map: HashMap<i64, T>,
     default: T
 }
 
-impl <T: Clone> SparseOffsetList<T> {
+impl <T: Clone + Serialize> SparseOffsetList<T> {
     pub fn new(default: T) -> SparseOffsetList<T> {
         SparseOffsetList {
             map: HashMap::new(),
@@ -48,7 +51,7 @@ impl <T: Clone> SparseOffsetList<T> {
     }
 }
 
-impl <T: Clone> Index<i64> for SparseOffsetList<T> {
+impl <T: Clone + Serialize> Index<i64> for SparseOffsetList<T> {
     type Output = T;
 
     fn index(&self, index: i64) -> &Self::Output {
@@ -56,7 +59,7 @@ impl <T: Clone> Index<i64> for SparseOffsetList<T> {
     }
 }
 
-impl <T: Clone> IndexMut<i64> for SparseOffsetList<T> {
+impl <T: Clone + Serialize> IndexMut<i64> for SparseOffsetList<T> {
     fn index_mut(&mut self, index: i64) -> &mut Self::Output {
         self.get_mut(index)
     }

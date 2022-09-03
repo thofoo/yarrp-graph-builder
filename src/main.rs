@@ -28,8 +28,8 @@ fn main() {
     info!("Let's go!");
 
     // TODO get from config file
-    let run_pipeline_on_yarrp_scan = false;
-    let run_pipeline_on_caida_scans = true;
+    let run_pipeline_on_yarrp_scan = true;
+    let run_pipeline_on_caida_scans = false;
 
     let feature_toggle = FeatureToggle {
         should_preprocess: false,
@@ -38,8 +38,9 @@ fn main() {
         should_persist_edges: false,
         should_deduplicate_edges: false,
         should_compute_graph: true,
+        max_thread_count: 8,
         graph_parameters_to_compute: GraphParametersToCompute {
-            degree: true,
+            degree: false,
             betweenness: true,
         }
     };

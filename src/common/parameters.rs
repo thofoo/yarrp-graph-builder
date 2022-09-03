@@ -47,6 +47,7 @@ pub struct FeatureToggle {
     pub should_persist_edges: bool,
     pub should_deduplicate_edges: bool,
     pub should_compute_graph: bool,
+    pub max_thread_count: u16,
     pub graph_parameters_to_compute: GraphParametersToCompute,
 }
 
