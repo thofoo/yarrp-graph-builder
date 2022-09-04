@@ -1,6 +1,7 @@
 use std::fs;
 use std::fs::{DirEntry, File};
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
+use std::os::unix::fs::MetadataExt;
 use csv::Writer;
 use hashbrown::HashMap;
 use log::{debug, info};
@@ -29,10 +30,12 @@ impl WartsDataPreprocessor {
 
         let files = fs::read_dir(&input_path).unwrap();
 
+        let empty_file_size = 65;
         let files_to_process: Vec<DirEntry> = files
             .map(|entry| entry.unwrap())
             .filter(|i| i.path().is_file())
-            .filter(|i| i.path().to_str().unwrap().ends_with(".warts.gz"))
+            .filter(|i| i.path().to_str().unwrap().trim().ends_with(".warts.gz"))
+            .filter(|i| i.metadata().unwrap().size() != empty_file_size)
             .collect();
 
         let mapping_file_name = self.config.output_paths().mapping();

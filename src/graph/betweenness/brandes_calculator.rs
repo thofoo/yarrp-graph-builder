@@ -8,6 +8,7 @@ use log::info;
 use pbr::ProgressBar;
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
+use crate::BetweennessParameters;
 
 use crate::graph::betweenness::brandes_memory::BrandesMemory;
 use crate::graph::common::graph::Graph;
@@ -25,16 +26,21 @@ struct BrandesThreadState {
 pub struct BrandesCalculator {
     graph: Graph,
     intermediate_folder_path: PathBuf,
-    max_thread_count: u16,
+    params: BetweennessParameters,
     writer: Writer<File>,
 }
 
 impl BrandesCalculator {
-    pub fn new(graph: Graph, intermediate_folder_path: &PathBuf, max_thread_count: u16, writer: Writer<File>) -> BrandesCalculator {
+    pub fn new(
+        graph: Graph,
+        intermediate_folder_path: &PathBuf,
+        params: BetweennessParameters,
+        writer: Writer<File>
+    ) -> BrandesCalculator {
         BrandesCalculator {
             graph,
             intermediate_folder_path: intermediate_folder_path.clone(),
-            max_thread_count,
+            params,
             writer
         }
     }
@@ -61,7 +67,7 @@ impl BrandesCalculator {
         let mut partial_results: Vec<SparseOffsetList<f64>> = Vec::new();
 
         let mut thread_id: u32 = 0;
-        let num_of_threads = self.max_thread_count as f64;
+        let num_of_threads = self.params.max_thread_count as f64;
         nodes.chunks(((nodes.len() as f64) / num_of_threads).ceil() as usize)
             .map(|chunk| {
                 let result = (chunk, thread_id);
@@ -84,8 +90,11 @@ impl BrandesCalculator {
                 for &s in nodes_left_to_visit {
                     self.calculate_delta_for_node(edges, &mut local_c_list, s);
                     counter += 1;
-                    if counter % 1_000 == 0 {
-                        local_c_list = self.persist_current_state(index, counter, local_c_list);
+                    let batch_size = self.params.result_batch_size;
+                    if counter % batch_size == 0 {
+                        if self.params.save_intermediate_results_periodically {
+                            local_c_list = self.persist_current_state(index, counter, local_c_list);
+                        }
                         Self::print_thread_progress(index, counter, total_node_count);
                     }
                 }

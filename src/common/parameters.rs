@@ -47,7 +47,6 @@ pub struct FeatureToggle {
     pub should_persist_edges: bool,
     pub should_deduplicate_edges: bool,
     pub should_compute_graph: bool,
-    pub max_thread_count: u16,
     pub graph_parameters_to_compute: GraphParametersToCompute,
 }
 
@@ -90,7 +89,15 @@ pub struct GraphBuilderParameters {
 #[derive(Clone)]
 pub struct GraphParametersToCompute {
     pub degree: bool,
-    pub betweenness: bool
+    pub betweenness: BetweennessParameters,
+}
+
+#[derive(Clone)]
+pub struct BetweennessParameters {
+    pub enabled: bool,
+    pub save_intermediate_results_periodically: bool,
+    pub result_batch_size: u32,
+    pub max_thread_count: u16,
 }
 
 impl GraphBuilderParameters {

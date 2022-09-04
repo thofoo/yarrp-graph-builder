@@ -38,7 +38,7 @@ impl Grapher {
         if should_compute.degree {
             graph = self.calculate_degree(graph);
         }
-        if should_compute.betweenness {
+        if should_compute.betweenness.enabled {
             self.calculate_betweenness(graph);
         }
         // TODO add more parameter types here
@@ -56,7 +56,7 @@ impl Grapher {
         let mut calculator = BrandesCalculator::new(
             graph,
             self.config.intermediary_file_path(),
-            self.config.enabled_features().max_thread_count,
+            self.config.enabled_features().graph_parameters_to_compute.betweenness.clone(),
             betweenness_writer
         );
         calculator.calculate_and_persist();
