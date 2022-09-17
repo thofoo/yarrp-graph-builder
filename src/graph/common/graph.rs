@@ -83,7 +83,6 @@ impl Graph {
     fn parse(&mut self, edges_path: &PathBuf) {
         let mut edges_reader = csv::Reader::from_path(edges_path).unwrap();
         edges_reader.deserialize()
-            .skip(1)
             .filter(|edge| edge.is_ok())
             .for_each(|edge: Result<CsvEdge, _>| {
                 let data = edge.unwrap();
