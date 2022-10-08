@@ -30,12 +30,12 @@ impl WartsDataPreprocessor {
 
         let files = fs::read_dir(&input_path).unwrap();
 
-        let empty_file_size = 65;
+        let empty_file_size_bytes = 100;
         let files_to_process: Vec<DirEntry> = files
             .map(|entry| entry.unwrap())
             .filter(|i| i.path().is_file())
             .filter(|i| i.path().to_str().unwrap().trim().ends_with(".warts.gz"))
-            .filter(|i| i.metadata().unwrap().size() != empty_file_size)
+            .filter(|i| i.metadata().unwrap().size() > empty_file_size_bytes)
             .collect();
 
         let mapping_file_name = self.config.output_paths().mapping();
