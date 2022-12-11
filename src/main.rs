@@ -28,24 +28,25 @@ fn main() {
     info!("Let's go!");
 
     // TODO get from config file
-    let run_pipeline_on_yarrp_scan = true;
-    let run_pipeline_on_caida_scans = false;
+    let run_pipeline_on_yarrp_scan = false;
+    let run_pipeline_on_caida_scans = true;
 
     let feature_toggle = FeatureToggle {
-        should_preprocess: false,
-        should_merge: false,
-        should_persist_index: false,
-        should_persist_edges: false,
-        should_deduplicate_edges: false,
+        should_preprocess: true,
+        should_merge: true,
+        should_persist_index: true,
+        should_persist_edges: true,
+        should_deduplicate_edges: true,
         should_compute_graph: true,
         graph_parameters_to_compute: GraphParametersToCompute {
             degree: true,
             betweenness: BetweennessParameters {
-                enabled: false,
+                enabled: true,
                 save_intermediate_results_periodically: false,
                 result_batch_size: 1_000,
                 max_thread_count: 12,
             },
+            degree_connectivity: true,
         }
     };
 
@@ -64,9 +65,9 @@ fn main() {
         let config = GraphBuilderParameters::new(
             /* read_compressed: */ false,
             IpType::V6,
-            "../../caida-ip-scans/v6/20220903/input",
-            "../../caida-ip-scans/v6/20220903/output/intermediate",
-            "../../caida-ip-scans/v6/20220903/output",
+            "../../caida-ip-scans/2021_09/v6/input",
+            "../../caida-ip-scans/2021_09/v6/output/intermediate",
+            "../../caida-ip-scans/2021_09/v6/output",
             feature_toggle
         );
 

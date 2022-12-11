@@ -16,6 +16,7 @@ pub struct OutputPaths {
     max_node_ids: PathBuf,
     betweenness: PathBuf,
     degree: PathBuf,
+    degree_connectivity: PathBuf,
 }
 
 impl OutputPaths {
@@ -36,6 +37,9 @@ impl OutputPaths {
     }
     pub fn degree(&self) -> &PathBuf {
         &self.degree
+    }
+    pub fn degree_connectivity(&self) -> &PathBuf {
+        &self.degree_connectivity
     }
 }
 
@@ -90,6 +94,7 @@ pub struct GraphBuilderParameters {
 pub struct GraphParametersToCompute {
     pub degree: bool,
     pub betweenness: BetweennessParameters,
+    pub degree_connectivity: bool,
 }
 
 #[derive(Clone)]
@@ -143,6 +148,7 @@ impl GraphBuilderParameters {
             max_node_ids: output_path.to_path_buf().join(Path::new("max_node_ids.csv")),
             betweenness: output_path.to_path_buf().join(Path::new("betweenness.csv")),
             degree: output_path.to_path_buf().join(Path::new("degree.csv")),
+            degree_connectivity: output_path.to_path_buf().join(Path::new("degree_connectivity.csv")),
         };
 
         GraphBuilderParameters {

@@ -1,9 +1,11 @@
+use std::fs::File;
 use log::info;
 use crate::graph::betweenness::brandes_calculator::BrandesCalculator;
 
 use crate::graph::common::graph::Graph;
 use crate::graph::degree::degree_counter::DegreeCounter;
 use crate::GraphBuilderParameters;
+use crate::graph::degree_connectivity::connectivity_calculator::ConnectivityCalculator;
 
 pub struct Grapher {
     config: GraphBuilderParameters,
@@ -39,7 +41,10 @@ impl Grapher {
             graph = self.calculate_degree(graph);
         }
         if should_compute.betweenness.enabled {
-            self.calculate_betweenness(graph);
+            graph = self.calculate_betweenness(graph);
+        }
+        if should_compute.degree_connectivity {
+            self.calculate_degree_connectivity(graph);
         }
         // TODO add more parameter types here
     }
@@ -64,7 +69,7 @@ impl Grapher {
     }
 
     fn calculate_degree(&self, graph: Graph) -> Graph {
-        info!("Calculating IN and OUT degree");
+        info!("Calculating DEGREE statistics per node");
 
         let degree_writer = csv::Writer::from_path(&self.config.output_paths().degree())
             .expect(&format!(
@@ -73,6 +78,20 @@ impl Grapher {
             ));
 
         let mut calculator = DegreeCounter::new(graph, degree_writer);
+        calculator.calculate_and_persist();
+        calculator.graph()
+    }
+
+    fn calculate_degree_connectivity(&self, graph: Graph) -> Graph {
+        info!("Calculating DEGREE CONNECTIVITY");
+
+        let degree_connectivity_file = File::create(&self.config.output_paths().degree_connectivity())
+            .expect(&format!(
+                "Could not create file for storing degree connectivity at {}",
+                &self.config.output_paths().degree_connectivity().to_str().unwrap()
+            ));
+
+        let mut calculator = ConnectivityCalculator::new(graph, degree_connectivity_file);
         calculator.calculate_and_persist();
         calculator.graph()
     }
