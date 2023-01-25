@@ -25,6 +25,7 @@ impl WartsDataPreprocessor {
     }
 
     pub fn preprocess_files(&self) {
+        info!("Step: Preprocessing WARTS files.");
         info!("Expecting to work with IP{:?} addresses.", self.config.address_type);
 
         let input_path = &self.config.input_path;

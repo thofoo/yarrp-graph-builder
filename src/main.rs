@@ -1,8 +1,9 @@
 extern crate core;
 
 use std::fs;
+use std::process::exit;
 use env_logger::Env;
-use log::{info, LevelFilter};
+use log::{error, info, LevelFilter};
 use crate::common::parameters::{BetweennessParameters, compute_output_paths, Config, DatasetConfig, FeatureToggle, GraphParametersToCompute, OutputPaths};
 use crate::common::structs::util::IpType;
 use crate::deduplicator::deduplicator::Deduplicator;
@@ -28,10 +29,18 @@ fn main() {
 
     info!("Let's go!");
 
-    let config_str = fs::read_to_string("Config.toml").unwrap();
-    let config: Config = toml::from_str(config_str.as_str()).unwrap();
+    let config_str = fs::read_to_string("Config.toml");
+    if config_str.is_err() {
+        error!("No Config.toml found in the current directory. Please make sure you have a valid \
+         Config.toml. The program will exit now.");
+        exit(1);
+    }
 
-    info!("Running with following config: {:?}", config);
+    let config: Config = toml::from_str(config_str.unwrap().as_str()).unwrap();
+
+    info!("Running with following config:");
+    // println, because info!() renders the newlines as \n
+    println!("{}", serde_json::to_string_pretty(&config).unwrap());
 
     if config.dataset.yarrp.enabled {
         run_on_yarrp_scan(config.dataset.yarrp, &config.features);
@@ -43,6 +52,7 @@ fn main() {
 }
 
 fn run_on_yarrp_scan(config: DatasetConfig, toggle: &FeatureToggle) {
+    info!("### Processing YARRP dataset. ###");
     let output_paths = compute_output_paths(&config);
 
     if toggle.should_preprocess {
@@ -63,6 +73,7 @@ fn run_on_yarrp_scan(config: DatasetConfig, toggle: &FeatureToggle) {
 }
 
 fn run_on_caida_scans(config: DatasetConfig, toggle: &FeatureToggle) {
+    info!("### Processing CAIDA dataset. ###");
     let output_paths = compute_output_paths(&config);
 
     if toggle.should_preprocess {

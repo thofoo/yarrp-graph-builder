@@ -27,13 +27,13 @@ impl Merger {
     }
 
     pub fn merge_data(self) {
+        info!("Step: Merge intermediate YARRP binary buckets.");
         info!("Expecting to work with IP{:?} addresses.", self.config.address_type);
 
-        info!("Beginning with the merging of the intermediate results.");
         info!("Creating empty output files...");
 
         let index_path = self.config.intermediate_path.join(
-            Path::new(parameters::NODE_INDEX_PATH)
+            Path::new(parameters::NODE_INDEX_FILENAME)
         );
 
         let node_mapping_output_path = self.output_paths.mapping();

@@ -1,10 +1,7 @@
 pub mod util {
-    use serde::Deserialize;
+    use serde::{Serialize, Deserialize};
 
-    #[derive(PartialEq)]
-    #[derive(Debug)]
-    #[derive(Clone)]
-    #[derive(Deserialize)]
+    #[derive(PartialEq, Debug, Clone, Serialize, Deserialize)]
     pub enum IpType {
         V4,
         V6,

@@ -66,25 +66,25 @@ impl BrandesCalculator {
 
         let mut partial_results: Vec<SparseOffsetList<f64>> = Vec::new();
 
-        let mut thread_id: u32 = 0;
+        let mut thread_counter: u32 = 0;
         let num_of_threads = self.params.max_thread_count as f64;
         nodes.chunks(((nodes.len() as f64) / num_of_threads).ceil() as usize)
             .map(|chunk| {
-                let result = (chunk, thread_id);
-                thread_id += 1;
+                let result = (chunk, thread_counter);
+                thread_counter += 1;
                 result
             })
             .collect::<Vec<(&[i64], u32)>>()
             .into_par_iter()
-            .map(|(nodes_to_visit, index)| {
+            .map(|(nodes_to_visit, thread_id)| {
                 let total_node_count = nodes_to_visit.len();
 
-                let thread_info = format!("Thread {}: {} nodes", index, total_node_count);
+                let thread_info = format!("Thread {}: {} nodes", thread_id, total_node_count);
                 info!("{}", thread_info);
 
-                let (mut local_c_list, mut counter) = self.restore_or_create_state(index);
+                let (mut local_c_list, mut counter) = self.restore_or_create_state(thread_id);
 
-                Self::print_thread_progress(index, counter, total_node_count);
+                Self::print_thread_progress(thread_id, counter, total_node_count);
 
                 let nodes_left_to_visit = &nodes_to_visit[(counter as usize)..];
                 for &s in nodes_left_to_visit {
@@ -92,14 +92,15 @@ impl BrandesCalculator {
                     counter += 1;
                     let batch_size = self.params.result_batch_size;
                     if counter % batch_size == 0 {
+                        Self::print_thread_progress(thread_id, counter, total_node_count);
                         if self.params.save_intermediate_results_periodically {
-                            local_c_list = self.persist_current_state(index, counter, local_c_list);
+                            info!("Thread {}: Saving intermediate results to binary file", thread_id);
+                            local_c_list = self.persist_current_state(thread_id, counter, local_c_list);
                         }
-                        Self::print_thread_progress(index, counter, total_node_count);
                     }
                 }
 
-                info!("Thread {}: finished", index);
+                info!("Thread {}: finished", thread_id);
                 local_c_list
             })
             .collect_into_vec(&mut partial_results);

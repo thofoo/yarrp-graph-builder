@@ -21,9 +21,8 @@ impl YarrpDataPreprocessor {
     }
 
     pub fn preprocess_files(&mut self) {
+        info!("Step: Preprocessing YARRP files.");
         info!("Expecting to work with IP{:?} addresses.", self.config.address_type);
-
-        info!("Initializing preprocessing.");
 
         let raw_files_list = fs::read_dir(&self.config.input_path).unwrap();
         let files_to_process: Vec<DirEntry> = raw_files_list
@@ -41,6 +40,14 @@ impl YarrpDataPreprocessor {
             .collect();
 
         let file_count = files_to_process.len() as u64;
+        if file_count == 0 {
+            info!(
+                "Found no files to process (read_compressed: {}). Proceeding with next step.",
+                self.config.read_compressed
+            );
+            return
+        }
+
         let mut progress_bar = ProgressBar::new(file_count);
 
         info!("Processing {} files...", file_count);
@@ -116,7 +123,7 @@ impl YarrpDataPreprocessor {
 
     fn store_index_to_disk(&self, index: HashMap<u128, u64>) {
         let node_index_path = self.config.intermediate_path.join(
-            Path::new(parameters::NODE_INDEX_PATH)
+            Path::new(parameters::NODE_INDEX_FILENAME)
         );
         file_util::write_to_file(&node_index_path, &index);
     }

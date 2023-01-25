@@ -3,11 +3,11 @@ use std::path::{Path, PathBuf};
 use std::process::exit;
 
 use log::error;
-use serde::Deserialize;
+use serde::{Serialize, Deserialize};
 
 use crate::IpType;
 
-pub const NODE_INDEX_PATH: &str = "yarrp.node_index.bin";
+pub const NODE_INDEX_FILENAME: &str = "yarrp.node_index.bin";
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct OutputPaths {
@@ -40,19 +40,19 @@ impl OutputPaths {
     }
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct Config {
     pub dataset: Dataset,
     pub features: FeatureToggle,
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct Dataset {
     pub yarrp: DatasetConfig,
     pub caida: DatasetConfig,
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct DatasetConfig {
     pub enabled: bool,
     pub read_compressed: bool,
@@ -62,7 +62,7 @@ pub struct DatasetConfig {
     pub output_path: PathBuf,
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct FeatureToggle {
     pub should_preprocess: bool,
     pub should_merge: bool,
@@ -73,18 +73,18 @@ pub struct FeatureToggle {
     pub parameters: GraphParametersToCompute,
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct GraphParametersToCompute {
     pub degree: DegreeParameters,
     pub betweenness: BetweennessParameters,
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct DegreeParameters {
     pub enabled: bool,
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct BetweennessParameters {
     pub enabled: bool,
     pub save_intermediate_results_periodically: bool,
