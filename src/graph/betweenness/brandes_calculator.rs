@@ -12,15 +12,15 @@ use crate::BetweennessParameters;
 
 use crate::graph::betweenness::brandes_memory::BrandesMemory;
 use crate::graph::common::graph::Graph;
-use crate::graph::common::sparse_offset_list::SparseOffsetList;
-use crate::preprocess::file_util::write_to_file;
+use crate::graph::common::sparse_list::SparseList;
+use crate::preprocess::file_util::write_binary_to_file;
 
 #[derive(Serialize)]
 #[derive(Deserialize)]
 struct BrandesThreadState {
     index: u32,
     counter: u32,
-    local_c_list: SparseOffsetList<f64>,
+    local_c_list: SparseList<f64>,
 }
 
 pub struct BrandesCalculator {
@@ -45,6 +45,9 @@ impl BrandesCalculator {
         }
     }
 
+    /**
+     * Calculates the betweenness centrality for each node and writes the values to the betweenness CSV file.
+     */
     pub fn calculate_and_persist(&mut self) {
         let c_list = &self.compute_betweenness_in_parallel();
 
@@ -57,14 +60,25 @@ impl BrandesCalculator {
         }
     }
 
-    fn compute_betweenness_in_parallel(&mut self) -> SparseOffsetList<f64> {
+    /**
+     * Calculates the betweenness centrality dependencies in parallel. At the end, the intermediate
+     * results are summed up to obtain the final values, which are then written to the output file.
+     * The implementation follows the original algorithm pseudocode of Brandes (2001) closely.
+     *
+     * If the intermediate save feature is enabled in the config, after every batch, the
+     * intermediate states are dumped as binary files into the intermediate folder.
+     *
+     * IMPORTANT: If intermediate files are present, it will read them in and continue computation
+     * from there. If you want to start a new calculation, DELETE THE INTERMEDIATE FILES!
+     */
+    fn compute_betweenness_in_parallel(&mut self) -> SparseList<f64> {
         let edges = self.graph.edges();
 
         let nodes = edges.keys();
 
         info!("Processing {} nodes...", nodes.len());
 
-        let mut partial_results: Vec<SparseOffsetList<f64>> = Vec::new();
+        let mut partial_results: Vec<SparseList<f64>> = Vec::new();
 
         let mut thread_counter: u32 = 0;
         let num_of_threads = self.params.max_thread_count as f64;
@@ -107,7 +121,7 @@ impl BrandesCalculator {
 
         let result_count = partial_results.len() as u64;
         let mut progress_bar = ProgressBar::new(result_count);
-        let mut global_c_list = SparseOffsetList::new(0.0);
+        let mut global_c_list = SparseList::new(0.0);
         for result in partial_results {
             for (&node, &value) in result.iter() {
                 global_c_list[node] += value;
@@ -124,10 +138,10 @@ impl BrandesCalculator {
         info!("{}", thread_info);
     }
 
-    fn restore_or_create_state(&self, index: u32) -> (SparseOffsetList<f64>, u32) {
+    fn restore_or_create_state(&self, index: u32) -> (SparseList<f64>, u32) {
         let file = self.get_state_path_for_index(index);
         if !file.exists() {
-            (SparseOffsetList::new(0.0), 0)
+            (SparseList::new(0.0), 0)
         } else {
             let state: BrandesThreadState = Self::read_from_file(&file).unwrap_or(
                 Self::get_fresh_thread_state(index)
@@ -137,14 +151,14 @@ impl BrandesCalculator {
         }
     }
 
-    fn persist_current_state(&self, index: u32, counter: u32, local_c_list: SparseOffsetList<f64>) -> SparseOffsetList<f64> {
+    fn persist_current_state(&self, index: u32, counter: u32, local_c_list: SparseList<f64>) -> SparseList<f64> {
         let file = self.get_state_path_for_index(index);
 
         let state = BrandesThreadState {
             index, counter, local_c_list
         };
 
-        write_to_file(&file, &state);
+        write_binary_to_file(&file, &state);
 
         state.local_c_list
     }
@@ -181,14 +195,14 @@ impl BrandesCalculator {
         BrandesThreadState {
             index,
             counter: 0,
-            local_c_list: SparseOffsetList::new(0.0),
+            local_c_list: SparseList::new(0.0),
         }
     }
 
     pub fn calculate_delta_for_node(
         &self,
-        neighbors: &SparseOffsetList<HashSet<i64>>,
-        c_list: &mut SparseOffsetList<f64>,
+        neighbors: &SparseList<HashSet<i64>>,
+        c_list: &mut SparseList<f64>,
         s: i64,
     ) {
         let memory = BrandesMemory::new();
@@ -210,11 +224,11 @@ impl BrandesCalculator {
 
     fn calculate_dependencies(
         &self,
-        neighbors: &SparseOffsetList<HashSet<i64>>,
+        neighbors: &SparseList<HashSet<i64>>,
         s_stack: &mut Vec<i64>,
-        p_list: &mut SparseOffsetList<Vec<i64>>,
-        sigma: &mut SparseOffsetList<u64>,
-        mut d: SparseOffsetList<i64>,
+        p_list: &mut SparseList<Vec<i64>>,
+        sigma: &mut SparseList<u64>,
+        mut d: SparseList<i64>,
         mut q: VecDeque<i64>
     ) {
         while !q.is_empty() {
@@ -238,11 +252,11 @@ impl BrandesCalculator {
     fn accumulate_dependency(
         &self,
         s: i64,
-        c_list: &mut SparseOffsetList<f64>,
+        c_list: &mut SparseList<f64>,
         s_stack: &mut Vec<i64>,
-        p_list: &mut SparseOffsetList<Vec<i64>>,
-        sigma: &mut SparseOffsetList<u64>,
-        delta: &mut SparseOffsetList<f64>
+        p_list: &mut SparseList<Vec<i64>>,
+        sigma: &mut SparseList<u64>,
+        delta: &mut SparseList<f64>
     ) {
         while !s_stack.is_empty() {
             let w = s_stack.pop().unwrap();

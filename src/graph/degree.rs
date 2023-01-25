@@ -1,2 +1,2 @@
 pub mod degree_counter;
-mod degree_memory;
+mod degree_calculator;

@@ -8,7 +8,7 @@ pub mod util {
     }
 }
 
-pub mod data {
+pub mod parse_data {
     use std::ops::RangeInclusive;
     use serde::Serialize;
     use serde::Deserialize;
@@ -59,12 +59,6 @@ pub mod data {
 
         pub fn range_inclusive(&self) -> RangeInclusive<i64> {
             self.min_node..=self.max_node
-        }
-        pub fn min_node(&self) -> i64 {
-            self.min_node
-        }
-        pub fn max_node(&self) -> i64 {
-            self.max_node
         }
         pub fn len(&self) -> usize {
             (self.min_node + self.max_node + 1) as usize

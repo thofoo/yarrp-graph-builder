@@ -10,7 +10,7 @@ use pbr::ProgressBar;
 
 use crate::{DatasetConfig, IpType, OutputPaths};
 use crate::common::parameters;
-use crate::common::structs::data::MaxNodeIds;
+use crate::common::structs::parse_data::MaxNodeIds;
 use crate::merge::merge_processor::MergeProcessor;
 
 pub struct Merger {
@@ -26,6 +26,19 @@ impl Merger {
         }
     }
 
+    /**
+     * Merges the nodes that were collected into buckets into their path form.
+     * The paths are then generated as an edge list CSV (from,to).
+     * Additionally, the IP-to-NodeID mapping is also stored to a CSV (IP,ID).
+     * (-> see also warts_data_preprocessor.rs)
+     *
+     *  Requires: Intermediate binary files at dataset.yarrp.intermediate_path
+     * Generates:
+     *     - edges.csv (edge list)
+     *     - mapping.csv (IP to ID mapping)
+     *     - max_node_ids.csv (maximum IDs assigned, both known and unknown)
+     * The edges and mapping are in no particular order.
+     */
     pub fn merge_data(self) {
         info!("Step: Merge intermediate YARRP binary buckets.");
         info!("Expecting to work with IP{:?} addresses.", self.config.address_type);
@@ -36,15 +49,15 @@ impl Merger {
             Path::new(parameters::NODE_INDEX_FILENAME)
         );
 
-        let node_mapping_output_path = self.output_paths.mapping();
-        let edge_output_path = self.output_paths.edges();
-        let max_node_id_path = self.output_paths.max_node_ids();
+        let node_mapping_output_path = &self.output_paths.mapping;
+        let edge_output_path = &self.output_paths.edges;
+        let max_node_id_path = &self.output_paths.max_node_ids;
 
         let mut index_writer = csv::Writer::from_path(&node_mapping_output_path)
             .expect(&format!(
                 "Could not create file for storing node mapping at {}", node_mapping_output_path.to_str().unwrap()
             ));
-        let mut edge_writer = csv::Writer::from_path(&self.output_paths.edges())
+        let mut edge_writer = csv::Writer::from_path(edge_output_path)
             .expect(&format!(
                 "Could not create file for storing edges at {}", edge_output_path.to_str().unwrap()
             ));
@@ -60,7 +73,7 @@ impl Merger {
         let max_known_node_id = self.write_node_mapping(index_path, &mut index_writer);
         let max_unknown_node_id = self.write_edge_mapping(dirs_to_process, &mut edge_writer);
 
-        let mut max_node_ids_writer = csv::Writer::from_path(&self.output_paths.max_node_ids())
+        let mut max_node_ids_writer = csv::Writer::from_path(max_node_id_path)
             .expect(&format!(
                 "Could not create file for storing max node ids at {}", max_node_id_path.to_str().unwrap()
             ));

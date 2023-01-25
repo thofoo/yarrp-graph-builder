@@ -5,7 +5,7 @@ use log::info;
 use pbr::ProgressBar;
 
 use crate::graph::common::graph::Graph;
-use crate::graph::degree::degree_memory::DegreeCalculator;
+use crate::graph::degree::degree_calculator::DegreeCalculator;
 
 pub struct DegreeCounter {
     graph: Graph,
@@ -19,6 +19,13 @@ impl DegreeCounter {
         }
     }
 
+    /**
+     * Calculates the degree statistics and writes them to the CSV file writer.
+     * Stats:
+     *     - degree in/out
+     *     - average neigbor degree (and) in/out
+     *     - iterated average neigbor degree (iand) in/out
+     */
     pub fn calculate_and_persist(&mut self) {
         let calculator = DegreeCalculator::new();
 

@@ -1,5 +1,5 @@
 [dataset.yarrp]
-enabled = false
+enabled = true
 read_compressed = true
 address_type = 'V4'
 input_path = '../../01_yarrp_scan/input/v4'
@@ -8,25 +8,26 @@ output_path = '../../01_yarrp_scan/output/v4'
 
 [dataset.caida]
 enabled = false
-read_compressed = true
+read_compressed = true # Not relevant for CAIDA. As for now, the files are always assumed compressed as .warts.gz
 address_type = 'V6'
-input_path = '../../caida-ip-scans/v6/20220903/input'
-intermediate_path = '../../caida-ip-scans/v6/20220903/output/intermediate'
-output_path = '../../caida-ip-scans/v6/20220903/output'
+input_path = '../../caida-ip-scans/custom/v6/input'
+intermediate_path = '../../caida-ip-scans/custom/v6/output/intermediate'
+output_path = '../../caida-ip-scans/custom/v6/output'
 
 [features]
-should_preprocess = false
-should_merge = false
-should_persist_index = false
-should_persist_edges = false
-should_deduplicate_edges = false
+# Skipping a step here assumes that the outputs of the previous file are present. If not, the program will panic.
+should_preprocess = true
+should_merge = true
+should_persist_index = true
+should_persist_edges = true
+should_deduplicate_edges = true
 should_compute_graph = true
 
 [features.parameters.degree]
 enabled = true
 
 [features.parameters.betweenness]
-enabled = false
-save_intermediate_results_periodically = false
-result_batch_size = 1_000
-max_thread_count = 12
+enabled = true
+save_intermediate_results_periodically = true
+result_batch_size = 1_000 # This applies both to the progress counter and the periodical saving of intermediate results.
+max_thread_count = 12 # Recommendation: Set to as many threads as you have CPU cores

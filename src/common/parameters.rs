@@ -11,33 +11,12 @@ pub const NODE_INDEX_FILENAME: &str = "yarrp.node_index.bin";
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct OutputPaths {
-    mapping: PathBuf,
-    edges: PathBuf,
-    edges_deduplicated: PathBuf,
-    max_node_ids: PathBuf,
-    betweenness: PathBuf,
-    degree: PathBuf,
-}
-
-impl OutputPaths {
-    pub fn mapping(&self) -> &PathBuf {
-        &self.mapping
-    }
-    pub fn edges(&self) -> &PathBuf {
-        &self.edges
-    }
-    pub fn edges_deduplicated(&self) -> &PathBuf {
-        &self.edges_deduplicated
-    }
-    pub fn max_node_ids(&self) -> &PathBuf {
-        &self.max_node_ids
-    }
-    pub fn betweenness(&self) -> &PathBuf {
-        &self.betweenness
-    }
-    pub fn degree(&self) -> &PathBuf {
-        &self.degree
-    }
+    pub mapping: PathBuf,
+    pub edges: PathBuf,
+    pub edges_deduplicated: PathBuf,
+    pub max_node_ids: PathBuf,
+    pub betweenness: PathBuf,
+    pub degree: PathBuf,
 }
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -92,39 +71,8 @@ pub struct BetweennessParameters {
     pub max_thread_count: u16,
 }
 
-impl DatasetConfig {
-    pub fn ensure_paths_exist(&self) {
-        let input_path = Path::new(&self.input_path).to_path_buf();
-        let intermediary_file_path = Path::new(&self.intermediate_path).to_path_buf();
-        let output_path = Path::new(&self.output_path).to_path_buf();
-
-        if !input_path.exists() {
-            error!("Specified input path does not exist");
-            exit(1);
-        }
-
-        if !input_path.is_dir() {
-            error!("Specified input path is not a directory");
-            exit(1);
-        }
-
-        if intermediary_file_path.exists() && !intermediary_file_path.is_dir() {
-            error!("Specified intermediate path is not a directory");
-            exit(1);
-        }
-
-        if output_path.exists() && !output_path.is_dir() {
-            error!("Specified output path is not a directory");
-            exit(1);
-        }
-
-        fs::create_dir_all(&intermediary_file_path).expect("Could not create intermediary file paths");
-        fs::create_dir_all(&output_path).expect("Could not create output file paths");
-    }
-}
-
 pub fn compute_output_paths(config: &DatasetConfig) -> OutputPaths {
-    config.ensure_paths_exist();
+    ensure_paths_exist(config);
 
     OutputPaths {
         mapping: config.output_path.to_path_buf().join(Path::new("mapping.csv")),
@@ -134,4 +82,33 @@ pub fn compute_output_paths(config: &DatasetConfig) -> OutputPaths {
         betweenness: config.output_path.to_path_buf().join(Path::new("betweenness.csv")),
         degree: config.output_path.to_path_buf().join(Path::new("degree.csv")),
     }
+}
+
+fn ensure_paths_exist(config: &DatasetConfig) {
+    let input_path = Path::new(&config.input_path).to_path_buf();
+    let intermediary_file_path = Path::new(&config.intermediate_path).to_path_buf();
+    let output_path = Path::new(&config.output_path).to_path_buf();
+
+    if !input_path.exists() {
+        error!("Specified input path does not exist");
+        exit(1);
+    }
+
+    if !input_path.is_dir() {
+        error!("Specified input path is not a directory");
+        exit(1);
+    }
+
+    if intermediary_file_path.exists() && !intermediary_file_path.is_dir() {
+        error!("Specified intermediate path is not a directory");
+        exit(1);
+    }
+
+    if output_path.exists() && !output_path.is_dir() {
+        error!("Specified output path is not a directory");
+        exit(1);
+    }
+
+    fs::create_dir_all(&intermediary_file_path).expect("Could not create intermediary file paths");
+    fs::create_dir_all(&output_path).expect("Could not create output file paths");
 }

@@ -4,11 +4,14 @@ use std::str::FromStr;
 
 use log::{error, warn};
 use crate::buckets::bucket_manager::GraphBucketManager;
-use crate::common::structs::data::{NodeV4, NodeV6};
+use crate::common::structs::parse_data::{NodeV4, NodeV6};
 use crate::IpType;
 
-
-pub fn parse_data_from_row(row: &String, memory: &mut GraphBucketManager, expected_ip_type: &IpType) {
+/**
+ * Takes a YARRP CSV format row and feeds the data into the given graph bucket manager.
+ * If an unexpected IP type is found, the program exits.
+ */
+pub fn parse_data_into_memory(row: &String, memory: &mut GraphBucketManager, expected_ip_type: &IpType) {
     let (raw_target_ip, raw_hop_count, raw_hop_ip) = extract_strings_from_row(row);
 
     let hop_count = hop_count_str_to_numeric(raw_hop_count);
@@ -58,8 +61,9 @@ pub fn parse_data_from_row(row: &String, memory: &mut GraphBucketManager, expect
             });
         },
         _ => {
-            warn!("SKIPPING ROW: IP type mismatch: Encountered a route with IPs of 2 \
-            different/unknown types: target ip {} hop ip {}", raw_target_ip, raw_hop_ip);
+            error!("IP type mismatch: Encountered a route with IPs of 2 different/unknown types: \
+                    target ip {} hop ip {}", raw_target_ip, raw_hop_ip);
+            exit(1);
         }
     }
 }

@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 
 use crate::buckets::bucket::GraphBucket;
-use crate::common::structs::data::{InternalNode, NodeV4, NodeV6};
+use crate::common::structs::parse_data::{InternalNode, NodeV4, NodeV6};
 
 pub struct GraphBucketManager<'a> {
     buckets: HashMap<u8, GraphBucket>,
@@ -25,6 +25,9 @@ impl<'a> GraphBucketManager<'a> {
         }
     }
 
+    /**
+     * Determines the suitable bucket for the given node and adds it to the bucket.
+     */
     pub fn add_node_v4(&mut self, node: NodeV4) {
         let bucket_id = self.calculate_bucket_id_v4(node.target_ip);
         let internal_node = self.convert_to_internal_node_v4(&node);
@@ -45,6 +48,20 @@ impl<'a> GraphBucketManager<'a> {
         )
     }
 
+    /**
+     * Determines the suitable bucket for the given node and adds it to the bucket.
+     */
+    pub fn add_node_v6(&mut self, node: NodeV6) {
+        let bucket_id = self.calculate_bucket_id_v6(node.target_ip);
+        let internal_node = self.convert_to_internal_node_v6(&node);
+
+        let bucket = self.fetch_bucket(bucket_id);
+        bucket.add_node(internal_node);
+    }
+
+    /**
+     * Takes a node, assigns numeric incremental IDs to it and returns the node IDs.
+     */
     fn convert_to_internal_node_v6(&mut self, node: &NodeV6) -> InternalNode {
         let target_node_id = if self.global_ip_mapping.contains_key(&node.target_ip) {
             *self.global_ip_mapping.get(&node.target_ip).unwrap()
@@ -69,14 +86,6 @@ impl<'a> GraphBucketManager<'a> {
             hop_id: hop_node_id,
             hop_count: node.hop_count.into(),
         }
-    }
-
-    pub fn add_node_v6(&mut self, node: NodeV6) {
-        let bucket_id = self.calculate_bucket_id_v6(node.target_ip);
-        let internal_node = self.convert_to_internal_node_v6(&node);
-
-        let bucket = self.fetch_bucket(bucket_id);
-        bucket.add_node(internal_node);
     }
 
     fn create_path_for_bucket_id(&self, bucket_id: u8) -> PathBuf {

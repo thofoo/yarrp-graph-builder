@@ -27,18 +27,10 @@ fn main() {
     env_builder.parse_env(env);
     env_builder.init();
 
-    info!("Let's go!");
+    info!("############## Let's go! ##############");
+    let config = read_config();
 
-    let config_str = fs::read_to_string("Config.toml");
-    if config_str.is_err() {
-        error!("No Config.toml found in the current directory. Please make sure you have a valid \
-         Config.toml. The program will exit now.");
-        exit(1);
-    }
-
-    let config: Config = toml::from_str(config_str.unwrap().as_str()).unwrap();
-
-    info!("Running with following config:");
+    info!("Running with config:");
     // println, because info!() renders the newlines as \n
     println!("{}", serde_json::to_string_pretty(&config).unwrap());
 
@@ -51,6 +43,21 @@ fn main() {
     }
 }
 
+fn read_config() -> Config {
+    let config_str = fs::read_to_string("Config.toml");
+    if config_str.is_err() {
+        error!("No Config.toml found in the current directory. Please make \
+                sure you have a valid Config.toml. The program will exit now.");
+        exit(1);
+    }
+
+    toml::from_str(config_str.unwrap().as_str()).unwrap()
+}
+
+/**
+ * Runs the whole YARRP pipeline, skipping the steps
+ * disabled in the [features] section of the config
+ */
 fn run_on_yarrp_scan(config: DatasetConfig, toggle: &FeatureToggle) {
     info!("### Processing YARRP dataset. ###");
     let output_paths = compute_output_paths(&config);
@@ -72,6 +79,10 @@ fn run_on_yarrp_scan(config: DatasetConfig, toggle: &FeatureToggle) {
     run(config, toggle, output_paths);
 }
 
+/**
+ * Runs the whole DAIDA pipeline, skipping the steps
+ * disabled in the [features] section of the config
+ */
 fn run_on_caida_scans(config: DatasetConfig, toggle: &FeatureToggle) {
     info!("### Processing CAIDA dataset. ###");
     let output_paths = compute_output_paths(&config);
@@ -88,6 +99,9 @@ fn run_on_caida_scans(config: DatasetConfig, toggle: &FeatureToggle) {
     run(config, toggle, output_paths);
 }
 
+/**
+ * Runs the common parts of the pipeline for both data sources.
+ */
 fn run(config: DatasetConfig, toggle: &FeatureToggle, output_paths: OutputPaths) {
     if toggle.should_deduplicate_edges {
         let deduplicator = Deduplicator::new(&output_paths);

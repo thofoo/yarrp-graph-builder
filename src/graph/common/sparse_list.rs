@@ -1,3 +1,9 @@
+/**
+ * Wrapper for HashMap to simulate a sparse Vec. Benefit: It does not allocate in-between values (if
+ * 2 and 100 are assigned, it will not need memory for 1 to 99).
+ * For unassigned values, it returns the default specified in the new function.
+ */
+
 use std::ops::{Index, IndexMut};
 use hashbrown::hash_map::Iter;
 use hashbrown::HashMap;
@@ -5,14 +11,14 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Serialize)]
 #[derive(Deserialize)]
-pub struct SparseOffsetList<T: Clone + Serialize> {
+pub struct SparseList<T: Clone + Serialize> {
     map: HashMap<i64, T>,
     default: T
 }
 
-impl <T: Clone + Serialize> SparseOffsetList<T> {
-    pub fn new(default: T) -> SparseOffsetList<T> {
-        SparseOffsetList {
+impl <T: Clone + Serialize> SparseList<T> {
+    pub fn new(default: T) -> SparseList<T> {
+        SparseList {
             map: HashMap::new(),
             default: default.clone(),
         }
@@ -51,7 +57,7 @@ impl <T: Clone + Serialize> SparseOffsetList<T> {
     }
 }
 
-impl <T: Clone + Serialize> Index<i64> for SparseOffsetList<T> {
+impl <T: Clone + Serialize> Index<i64> for SparseList<T> {
     type Output = T;
 
     fn index(&self, index: i64) -> &Self::Output {
@@ -59,7 +65,7 @@ impl <T: Clone + Serialize> Index<i64> for SparseOffsetList<T> {
     }
 }
 
-impl <T: Clone + Serialize> IndexMut<i64> for SparseOffsetList<T> {
+impl <T: Clone + Serialize> IndexMut<i64> for SparseList<T> {
     fn index_mut(&mut self, index: i64) -> &mut Self::Output {
         self.get_mut(index)
     }

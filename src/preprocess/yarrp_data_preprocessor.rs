@@ -20,9 +20,24 @@ impl YarrpDataPreprocessor {
         YarrpDataPreprocessor { config: config.clone() }
     }
 
+    /**
+     * Joins the path into buckets and creates a node-to-IP mapping.
+     * This step only generates binary files, no human-readable output is generated.
+     * The output of this step is required for the merger step.
+     *
+     *  Requires: Input files (either compressed as .yarrp.bz2 or uncompressed as .yarrp)
+     *            at dataset.yarrp.input_path
+     * Generates: Intermediate binary files at dataset.yarrp.intermediate_path
+     */
     pub fn preprocess_files(&mut self) {
         info!("Step: Preprocessing YARRP files.");
         info!("Expecting to work with IP{:?} addresses.", self.config.address_type);
+
+        if self.config.read_compressed {
+            info!("Reading COMPRESSED: Retrieving all files ending with bz2");
+        } else {
+            info!("Reading UNCOMPRESSED: Retrieving all files NOT ending with bz2");
+        }
 
         let raw_files_list = fs::read_dir(&self.config.input_path).unwrap();
         let files_to_process: Vec<DirEntry> = raw_files_list
@@ -32,9 +47,9 @@ impl YarrpDataPreprocessor {
                 let path_buf = i.path().to_path_buf();
                 let path_string = path_buf.to_str().unwrap();
                 if self.config.read_compressed {
-                    path_string.ends_with("bz2")
+                    path_string.ends_with(".bz2")
                 } else {
-                    !path_string.ends_with("bz2")
+                    !path_string.ends_with(".bz2")
                 }
             })
             .collect();
@@ -47,10 +62,13 @@ impl YarrpDataPreprocessor {
             );
             return
         }
+        let dir_listing: Vec<String> = files_to_process.iter()
+            .map(|entry| format!("- {:?}", entry.path()))
+            .collect();
+
+        info!("Found {} files:\n{}", file_count, dir_listing.join("\n"));
 
         let mut progress_bar = ProgressBar::new(file_count);
-
-        info!("Processing {} files...", file_count);
         progress_bar.set(0);
 
         let mut index: HashMap<u128, u64> = HashMap::new();
@@ -79,9 +97,10 @@ impl YarrpDataPreprocessor {
     }
 
     /**
-     * Returns true if the directory was successfully created, false if the directory already existed.
+     * Creates an intermediate path
+     * Returns (intermediate_path: PathBuf, was_newly_created: bool)
      */
-    pub fn create_intermediate_path(&mut self, suffix: &str) -> (PathBuf, bool) {
+    fn create_intermediate_path(&mut self, suffix: &str) -> (PathBuf, bool) {
         let path: PathBuf = self.config.intermediate_path.join(
             Path::new(suffix),
         );
@@ -98,7 +117,7 @@ impl YarrpDataPreprocessor {
         trace!("Parsing row data...");
         let address_type = &self.config.address_type;
         raw_rows.iter().for_each(|row|
-            parser::parse_data_from_row(row, memory, address_type)
+            parser::parse_data_into_memory(row, memory, address_type)
         );
     }
 
@@ -125,6 +144,6 @@ impl YarrpDataPreprocessor {
         let node_index_path = self.config.intermediate_path.join(
             Path::new(parameters::NODE_INDEX_FILENAME)
         );
-        file_util::write_to_file(&node_index_path, &index);
+        file_util::write_binary_to_file(&node_index_path, &index);
     }
 }

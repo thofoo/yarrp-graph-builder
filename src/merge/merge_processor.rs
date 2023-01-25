@@ -19,6 +19,11 @@ impl<'a> MergeProcessor<'a> {
         }
     }
 
+    /**
+     * Writes the path data from the bucket into the output edge list CSV.
+     * For missing hops, a negative ID is assigned. The ID is pinned to the starting point -
+     * for any edge A-B with a known A and an unknown B, the same negative ID is used for B.
+     */
     pub fn process_bucket(&mut self, files_to_process: Vec<PathBuf>) -> i64 {
         let merged_edge_map = self.merge_edge_maps(files_to_process);
 
@@ -54,6 +59,9 @@ impl<'a> MergeProcessor<'a> {
         self.missing_node_counter
     }
 
+    /**
+     * Merges the requested bucket into paths across all input files.
+     */
     fn merge_edge_maps(&self, files_to_process: Vec<PathBuf>) -> HashMap<u64, Vec<(u64, u8)>> {
         let mut edge_map = HashMap::new();
 

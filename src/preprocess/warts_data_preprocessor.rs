@@ -6,7 +6,7 @@ use csv::Writer;
 use hashbrown::HashMap;
 use log::{debug, info};
 use warts::{Address, Object};
-use crate::common::structs::data::MaxNodeIds;
+use crate::common::structs::parse_data::MaxNodeIds;
 use crate::{DatasetConfig, IpType, OutputPaths};
 use crate::preprocess::file_util;
 use crate::preprocess::parser::{ipv4_to_numeric, ipv6_to_numeric};
@@ -24,6 +24,19 @@ impl WartsDataPreprocessor {
         }
     }
 
+    /**
+     * Assigns IDs to the IP nodes and generates an edge list out of the paths.
+     * The paths are then generated as an edge list CSV (from,to).
+     * Additionally, the IP-to-NodeID mapping is also stored to a CSV (IP,ID).
+     * (-> see also merger.rs)
+     *
+     *  Requires: .warts.gz input files at dataset.caida.input_path
+     * Generates:
+     *     - edges.csv (edge list)
+     *     - mapping.csv (IP to ID mapping)
+     *     - max_node_ids.csv (maximum IDs assigned, both known and unknown)
+     * The edges and mapping are in no particular order.
+     */
     pub fn preprocess_files(&self) {
         info!("Step: Preprocessing WARTS files.");
         info!("Expecting to work with IP{:?} addresses.", self.config.address_type);
@@ -40,9 +53,9 @@ impl WartsDataPreprocessor {
             .filter(|i| i.metadata().unwrap().size() > empty_file_size_bytes)
             .collect();
 
-        let mapping_file_name = self.output_paths.mapping();
-        let edges_file_name = self.output_paths.edges();
-        let max_node_file_name = self.output_paths.max_node_ids();
+        let mapping_file_name = &self.output_paths.mapping;
+        let edges_file_name = &self.output_paths.edges;
+        let max_node_file_name = &self.output_paths.max_node_ids;
 
         let index_writer = csv::Writer::from_path(mapping_file_name)
             .expect(&format!(
@@ -61,7 +74,6 @@ impl WartsDataPreprocessor {
         let mut counter: i64 = 0;
         let mut missing_node_counter: i64 = -1;
         let mut missing_node_memory: HashMap<i64, i64> = HashMap::new();
-
 
         let mut file_processed_counter = 1;
         edge_writer.serialize(("from", "to")).unwrap();
@@ -83,6 +95,11 @@ impl WartsDataPreprocessor {
         Self::write_max_node_ids_to_disk(&mut max_node_ids_writer, counter, missing_node_counter);
     }
 
+    /**
+     * Processes all the paths in one file and directly writes the edges to the output file.
+     * For missing hops, a negative ID is assigned. The ID is pinned to the starting point -
+     * for any edge A-B with a known A and an unknown B, the same negative ID is used for B.
+     */
     fn process_single_file(
         &self,
         file: &DirEntry,
@@ -152,6 +169,9 @@ impl WartsDataPreprocessor {
         }
     }
 
+    /**
+     * Writes the node mapping to a CSV file.
+     */
     fn write_node_mapping_to_disk(&self, mut index_writer: Writer<File>, index: HashMap<u128, i64>) {
         index_writer.serialize(("ip", "node_id")).unwrap();
         index.iter()
@@ -168,6 +188,9 @@ impl WartsDataPreprocessor {
         index_writer.flush().unwrap();
     }
 
+    /**
+     * Writes the max node IDs that were assigned to a separate file.
+     */
     fn write_max_node_ids_to_disk(max_node_ids_writer: &mut Writer<File>, counter: i64, missing_node_counter: i64) {
         let max_node_ids = MaxNodeIds {
             known: (counter - 1) as usize,

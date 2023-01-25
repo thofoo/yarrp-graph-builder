@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 
 use crate::graph::common::graph::Graph;
-use crate::graph::common::sparse_offset_list::SparseOffsetList;
+use crate::graph::common::sparse_list::SparseList;
 
 pub struct DegreeCalculator {
 }
@@ -55,8 +55,8 @@ impl DegreeCalculator {
 
     fn obtain_average(
         direction: Direction,
-        edges: &SparseOffsetList<HashSet<i64>>,
-        reverse_edges: &SparseOffsetList<HashSet<i64>>,
+        edges: &SparseList<HashSet<i64>>,
+        reverse_edges: &SparseList<HashSet<i64>>,
         neighbors: &mut Vec<i64>
     ) -> f64 {
         if neighbors.is_empty() {
@@ -112,7 +112,7 @@ impl DegreeCalculator {
         Self::obtain_average(direction, edges, reverse_edges, &mut two_hop_neighbors)
     }
 
-    fn obtain_second_degree_neighborhood(node_id: i64, edges: &SparseOffsetList<HashSet<i64>>) -> Vec<i64> {
+    fn obtain_second_degree_neighborhood(node_id: i64, edges: &SparseList<HashSet<i64>>) -> Vec<i64> {
         edges[node_id].iter()
             .flat_map(|&neighbor| &edges[neighbor])
             .map(|&n| n)

@@ -1,20 +1,24 @@
+/**
+ * Structure for parsing and holding the graph structure in memory.
+ */
+
 use std::collections::HashSet;
 use std::path::PathBuf;
 use lazy_init::Lazy;
 
-use crate::common::structs::data::{CsvEdge, MaxNodeIds, NodeBoundaries};
-use crate::graph::common::sparse_offset_list::SparseOffsetList;
+use crate::common::structs::parse_data::{CsvEdge, MaxNodeIds, NodeBoundaries};
+use crate::graph::common::sparse_list::SparseList;
 use crate::OutputPaths;
 
 pub struct Graph {
-    edges: SparseOffsetList<HashSet<i64>>,
-    reverse: Lazy<SparseOffsetList<HashSet<i64>>>,
+    edges: SparseList<HashSet<i64>>,
+    reverse: Lazy<SparseList<HashSet<i64>>>,
     boundaries: NodeBoundaries,
 }
 
 impl Graph {
     pub fn new(output_paths: &OutputPaths, from_deduplicated: bool) -> Graph {
-        let max_node_id_path = output_paths.max_node_ids();
+        let max_node_id_path = &output_paths.max_node_ids;
 
         let max_node_ids: MaxNodeIds = csv::Reader::from_path(max_node_id_path).unwrap()
             .deserialize()
@@ -23,9 +27,9 @@ impl Graph {
             .unwrap();
 
         let edges_path = if from_deduplicated {
-            output_paths.edges_deduplicated()
+            &output_paths.edges_deduplicated
         } else {
-            output_paths.edges()
+            &output_paths.edges
         };
 
         let mut graph = Graph::init(max_node_ids);
@@ -36,7 +40,7 @@ impl Graph {
     fn init(max_node_ids: MaxNodeIds) -> Graph {
         let boundaries = NodeBoundaries::new(max_node_ids);
         Graph {
-            edges: SparseOffsetList::new(
+            edges: SparseList::new(
                 HashSet::<i64>::new()
             ),
             reverse: Lazy::new(),
@@ -54,7 +58,7 @@ impl Graph {
      * WARNING: You need to call `ensure_reversed_edges_exist` first (once),
      * otherwise you get a panic!().
      */
-    pub fn edges_reversed(&self) -> &SparseOffsetList<HashSet<i64>> {
+    pub fn edges_reversed(&self) -> &SparseList<HashSet<i64>> {
         // We could also just make this function mutable and call get_or_create
         // but then we'd lock the result in a mutable borrow, which creates issues
 
@@ -66,8 +70,8 @@ impl Graph {
         }
     }
 
-    fn calculate_reverse_graph(edges: &SparseOffsetList<HashSet<i64>>) -> SparseOffsetList<HashSet<i64>> {
-        let mut reversed: SparseOffsetList<HashSet<i64>> = SparseOffsetList::new(
+    fn calculate_reverse_graph(edges: &SparseList<HashSet<i64>>) -> SparseList<HashSet<i64>> {
+        let mut reversed: SparseList<HashSet<i64>> = SparseList::new(
             HashSet::<i64>::new(),
         );
 
@@ -91,7 +95,7 @@ impl Graph {
             });
     }
 
-    pub fn edges(&self) -> &SparseOffsetList<HashSet<i64>> {
+    pub fn edges(&self) -> &SparseList<HashSet<i64>> {
         &self.edges
     }
 
