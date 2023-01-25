@@ -1,8 +1,9 @@
 extern crate core;
 
+use std::fs;
 use env_logger::Env;
 use log::{info, LevelFilter};
-use crate::common::parameters::{BetweennessParameters, FeatureToggle, GraphBuilderParameters, GraphParametersToCompute};
+use crate::common::parameters::{BetweennessParameters, compute_output_paths, Config, DatasetConfig, FeatureToggle, GraphParametersToCompute, OutputPaths};
 use crate::common::structs::util::IpType;
 use crate::deduplicator::deduplicator::Deduplicator;
 use crate::graph::grapher::Grapher;
@@ -27,84 +28,69 @@ fn main() {
 
     info!("Let's go!");
 
-    // TODO get from config file
-    let run_pipeline_on_yarrp_scan = true;
-    let run_pipeline_on_caida_scans = false;
+    let config_str = fs::read_to_string("Config.toml").unwrap();
+    let config: Config = toml::from_str(config_str.as_str()).unwrap();
 
-    let feature_toggle = FeatureToggle {
-        should_preprocess: false,
-        should_merge: false,
-        should_persist_index: false,
-        should_persist_edges: false,
-        should_deduplicate_edges: false,
-        should_compute_graph: true,
-        graph_parameters_to_compute: GraphParametersToCompute {
-            degree: true,
-            betweenness: BetweennessParameters {
-                enabled: false,
-                save_intermediate_results_periodically: false,
-                result_batch_size: 1_000,
-                max_thread_count: 12,
-            },
-        }
-    };
+    info!("Running with following config: {:?}", config);
 
-    if run_pipeline_on_yarrp_scan {
-        let config = GraphBuilderParameters::new(
-            /* read_compressed: */ false,
-            IpType::V4,
-            "../../01_yarrp_scan/input/v4",
-            "../../01_yarrp_scan/output/v4/intermediate",
-            "../../01_yarrp_scan/output/v4",
-            feature_toggle
-        );
+    if config.dataset.yarrp.enabled {
+        run_on_yarrp_scan(config.dataset.yarrp, &config.features);
+    }
 
-        run_on_yarrp_scan(config);
-    } else if run_pipeline_on_caida_scans {
-        let config = GraphBuilderParameters::new(
-            /* read_compressed: */ false,
-            IpType::V6,
-            "../../caida-ip-scans/v6/20220903/input",
-            "../../caida-ip-scans/v6/20220903/output/intermediate",
-            "../../caida-ip-scans/v6/20220903/output",
-            feature_toggle
-        );
-
-        run_on_caida_scans(config);
-    } else {
-        info!("Nothing to do! Please recheck the configuration.");
+    if config.dataset.caida.enabled {
+        run_on_caida_scans(config.dataset.caida, &config.features);
     }
 }
 
-fn run_on_yarrp_scan(config: GraphBuilderParameters) {
-    config.print_path_info();
+fn run_on_yarrp_scan(config: DatasetConfig, toggle: &FeatureToggle) {
+    let output_paths = compute_output_paths(&config);
 
-    let mut preprocessor = YarrpDataPreprocessor::new(&config);
-    preprocessor.preprocess_files();
+    if toggle.should_preprocess {
+        let mut preprocessor = YarrpDataPreprocessor::new(&config);
+        preprocessor.preprocess_files();
+    } else {
+        info!("Preprocessing flag is FALSE - skipping preprocessing.");
+    }
 
-    let merger = Merger::new(&config);
-    merger.merge_data();
+    if toggle.should_merge {
+        let merger = Merger::new(&config, &output_paths);
+        merger.merge_data();
+    } else {
+        info!("Merging flag is FALSE - skipping merging.");
+    }
 
-    run(config);
+    run(config, toggle, output_paths);
 }
 
-fn run_on_caida_scans(config: GraphBuilderParameters) {
-    config.print_path_info();
+fn run_on_caida_scans(config: DatasetConfig, toggle: &FeatureToggle) {
+    let output_paths = compute_output_paths(&config);
 
-    let preprocessor = WartsDataPreprocessor::new(&config);
-    preprocessor.preprocess_files();
+    if toggle.should_preprocess {
+        let preprocessor = WartsDataPreprocessor::new(&config, &output_paths);
+        preprocessor.preprocess_files();
+    } else {
+        info!("Preprocessing flag is FALSE - skipping preprocessing.");
+    }
 
-    run(config);
+    info!("No merging step necessary for CAIDA scans.");
+
+    run(config, toggle, output_paths);
 }
 
-fn run(config: GraphBuilderParameters) {
-    info!("Expecting to read IP{:?} addresses.", &config.address_type());
+fn run(config: DatasetConfig, toggle: &FeatureToggle, output_paths: OutputPaths) {
+    if toggle.should_deduplicate_edges {
+        let deduplicator = Deduplicator::new(&output_paths);
+        deduplicator.deduplicate_edges();
+    } else {
+        info!("Deduplication flag is FALSE - skipping deduplication.");
+    }
 
-    let deduplicator = Deduplicator::new(&config);
-    deduplicator.deduplicate_edges();
-
-    let grapher = Grapher::new(&config);
-    grapher.collect_graph_stats();
+    if toggle.should_compute_graph {
+        let grapher = Grapher::new(&config, &output_paths, &toggle.parameters);
+        grapher.collect_graph_stats();
+    } else {
+        info!("Graph computation flag is FALSE - skipping graph computation.");
+    }
 
     info!("############## Finished ##############");
 }

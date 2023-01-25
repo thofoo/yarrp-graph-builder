@@ -7,26 +7,27 @@ use hashbrown::HashMap;
 use log::{debug, info};
 use warts::{Address, Object};
 use crate::common::structs::data::MaxNodeIds;
-use crate::{GraphBuilderParameters, IpType};
+use crate::{DatasetConfig, IpType, OutputPaths};
 use crate::preprocess::file_util;
 use crate::preprocess::parser::{ipv4_to_numeric, ipv6_to_numeric};
 
 pub struct WartsDataPreprocessor {
-    config: GraphBuilderParameters,
+    config: DatasetConfig,
+    output_paths: OutputPaths,
 }
 
 impl WartsDataPreprocessor {
-    pub fn new(config: &GraphBuilderParameters) -> WartsDataPreprocessor {
-        WartsDataPreprocessor { config: config.clone() }
+    pub fn new(config: &DatasetConfig, output_paths: &OutputPaths) -> WartsDataPreprocessor {
+        WartsDataPreprocessor {
+            config: config.clone(),
+            output_paths: output_paths.clone(),
+        }
     }
 
     pub fn preprocess_files(&self) {
-        if !self.config.enabled_features().should_preprocess() {
-            info!("Preprocessing flag is FALSE - skipping preprocessing.");
-            return;
-        }
+        info!("Expecting to work with IP{:?} addresses.", self.config.address_type);
 
-        let input_path = self.config.input_path();
+        let input_path = &self.config.input_path;
 
         let files = fs::read_dir(&input_path).unwrap();
 
@@ -38,9 +39,9 @@ impl WartsDataPreprocessor {
             .filter(|i| i.metadata().unwrap().size() > empty_file_size_bytes)
             .collect();
 
-        let mapping_file_name = self.config.output_paths().mapping();
-        let edges_file_name = self.config.output_paths().edges();
-        let max_node_file_name = self.config.output_paths().max_node_ids();
+        let mapping_file_name = self.output_paths.mapping();
+        let edges_file_name = self.output_paths.edges();
+        let max_node_file_name = self.output_paths.max_node_ids();
 
         let index_writer = csv::Writer::from_path(mapping_file_name)
             .expect(&format!(
@@ -154,7 +155,7 @@ impl WartsDataPreprocessor {
         index_writer.serialize(("ip", "node_id")).unwrap();
         index.iter()
             .map(|(&ip, &node_id)| {
-                let ip_addr = if self.config.address_type() == &IpType::V4 {
+                let ip_addr = if self.config.address_type == IpType::V4 {
                     IpAddr::V4(Ipv4Addr::from(u32::try_from(ip).unwrap()))
                 } else {
                     IpAddr::V6(Ipv6Addr::from(ip))

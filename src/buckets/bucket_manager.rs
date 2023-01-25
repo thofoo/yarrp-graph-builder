@@ -3,18 +3,17 @@ use std::path::PathBuf;
 
 use crate::buckets::bucket::GraphBucket;
 use crate::common::structs::data::{InternalNode, NodeV4, NodeV6};
-use crate::GraphBuilderParameters;
 
 pub struct GraphBucketManager<'a> {
     buckets: HashMap<u8, GraphBucket>,
     global_ip_mapping: &'a mut HashMap<u128, u64>,
     id_counter: u64,
-    config: GraphBuilderParameters,
+    intermediate_path: PathBuf,
 }
 
 impl<'a> GraphBucketManager<'a> {
     pub fn new(
-        config: &GraphBuilderParameters,
+        intermediate_path: PathBuf,
         global_ip_mapping: &'a mut HashMap<u128, u64>,
         counter: u64
     ) -> GraphBucketManager<'a> {
@@ -22,7 +21,7 @@ impl<'a> GraphBucketManager<'a> {
             buckets: HashMap::new(),
             global_ip_mapping,
             id_counter: counter,
-            config: config.clone(),
+            intermediate_path,
         }
     }
 
@@ -81,7 +80,7 @@ impl<'a> GraphBucketManager<'a> {
     }
 
     fn create_path_for_bucket_id(&self, bucket_id: u8) -> PathBuf {
-        self.config.intermediary_file_path().join(format!("yarrp.{}.bin", bucket_id))
+        self.intermediate_path.join(format!("yarrp.{}.bin", bucket_id))
     }
 
     fn calculate_bucket_id_v4(&mut self, ip: u32) -> u8 {

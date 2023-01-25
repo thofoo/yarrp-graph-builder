@@ -4,7 +4,7 @@ use lazy_init::Lazy;
 
 use crate::common::structs::data::{CsvEdge, MaxNodeIds, NodeBoundaries};
 use crate::graph::common::sparse_offset_list::SparseOffsetList;
-use crate::GraphBuilderParameters;
+use crate::OutputPaths;
 
 pub struct Graph {
     edges: SparseOffsetList<HashSet<i64>>,
@@ -13,8 +13,8 @@ pub struct Graph {
 }
 
 impl Graph {
-    pub fn new(config: &GraphBuilderParameters, from_deduplicated: bool) -> Graph {
-        let max_node_id_path = config.output_paths().max_node_ids();
+    pub fn new(output_paths: &OutputPaths, from_deduplicated: bool) -> Graph {
+        let max_node_id_path = output_paths.max_node_ids();
 
         let max_node_ids: MaxNodeIds = csv::Reader::from_path(max_node_id_path).unwrap()
             .deserialize()
@@ -23,9 +23,9 @@ impl Graph {
             .unwrap();
 
         let edges_path = if from_deduplicated {
-            config.output_paths().edges_deduplicated()
+            output_paths.edges_deduplicated()
         } else {
-            config.output_paths().edges()
+            output_paths.edges()
         };
 
         let mut graph = Graph::init(max_node_ids);

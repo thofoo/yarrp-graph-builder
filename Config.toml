@@ -1,0 +1,32 @@
+[dataset.yarrp]
+enabled = false
+read_compressed = true
+address_type = 'V4'
+input_path = '../../01_yarrp_scan/input/v4'
+intermediate_path = '../../01_yarrp_scan/output/v4/intermediate'
+output_path = '../../01_yarrp_scan/output/v4'
+
+[dataset.caida]
+enabled = false
+read_compressed = true
+address_type = 'V6'
+input_path = '../../caida-ip-scans/v6/20220903/input'
+intermediate_path = '../../caida-ip-scans/v6/20220903/output/intermediate'
+output_path = '../../caida-ip-scans/v6/20220903/output'
+
+[features]
+should_preprocess = false
+should_merge = false
+should_persist_index = false
+should_persist_edges = false
+should_deduplicate_edges = false
+should_compute_graph = true
+
+[features.parameters.degree]
+enabled = true
+
+[features.parameters.betweenness]
+enabled = false
+save_intermediate_results_periodically = false
+result_batch_size = 1_000
+max_thread_count = 12
