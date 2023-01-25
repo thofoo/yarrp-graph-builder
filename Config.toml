@@ -1,15 +1,15 @@
 [dataset.yarrp]
-enabled = true
-read_compressed = true
-address_type = 'V4'
+enabled = false
+read_compressed = false
+address_type = 'V4' # one of [V4, V6]
 input_path = '../../01_yarrp_scan/input/v4'
 intermediate_path = '../../01_yarrp_scan/output/v4/intermediate'
 output_path = '../../01_yarrp_scan/output/v4'
 
-[dataset.caida]
+[dataset.warts]
 enabled = false
-read_compressed = true # Not relevant for CAIDA. As for now, the files are always assumed compressed as .warts.gz
-address_type = 'V6'
+read_compressed = false # Not relevant for WARTS. As for now, the files are always assumed compressed as .warts.gz
+address_type = 'V6' # one of [V4, V6]
 input_path = '../../caida-ip-scans/custom/v6/input'
 intermediate_path = '../../caida-ip-scans/custom/v6/output/intermediate'
 output_path = '../../caida-ip-scans/custom/v6/output'

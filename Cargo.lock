@@ -290,6 +290,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "graph-from-tracerouting"
+version = "0.1.0"
+dependencies = [
+ "bincode",
+ "csv",
+ "env_logger",
+ "flate2",
+ "hashbrown",
+ "lazy-init",
+ "libmath",
+ "log",
+ "pbr",
+ "rayon",
+ "serde",
+ "serde_json",
+ "toml",
+ "warts",
+]
+
+[[package]]
 name = "hashbrown"
 version = "0.12.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -754,24 +774,4 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "129e027ad65ce1453680623c3fb5163cbf7107bfe1aa32257e7d0e63f9ced188"
 dependencies = [
  "tap",
-]
-
-[[package]]
-name = "yarrp-graph-builder"
-version = "0.1.0"
-dependencies = [
- "bincode",
- "csv",
- "env_logger",
- "flate2",
- "hashbrown",
- "lazy-init",
- "libmath",
- "log",
- "pbr",
- "rayon",
- "serde",
- "serde_json",
- "toml",
- "warts",
 ]

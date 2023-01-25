@@ -30,7 +30,7 @@ impl WartsDataPreprocessor {
      * Additionally, the IP-to-NodeID mapping is also stored to a CSV (IP,ID).
      * (-> see also merger.rs)
      *
-     *  Requires: .warts.gz input files at dataset.caida.input_path
+     *  Requires: .warts.gz input files at dataset.warts.input_path
      * Generates:
      *     - edges.csv (edge list)
      *     - mapping.csv (IP to ID mapping)

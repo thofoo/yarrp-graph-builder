@@ -118,7 +118,7 @@ impl Merger {
     }
 
     fn write_edge_mapping(&self, dirs_to_process: Vec<DirEntry>, edge_writer: &mut Writer<File>) -> usize {
-        let bucket_count = 256;
+        let bucket_count = crate::buckets::bucket_manager::BUCKET_COUNT;
 
         info!(
             "Processing {} intermediary directories with {} buckets each to the final format...",

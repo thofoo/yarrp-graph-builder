@@ -23,8 +23,8 @@ impl DegreeCounter {
      * Calculates the degree statistics and writes them to the CSV file writer.
      * Stats:
      *     - degree in/out
-     *     - average neigbor degree (and) in/out
-     *     - iterated average neigbor degree (iand) in/out
+     *     - average neighbor degree (and) in/out
+     *     - iterated average neighbor degree (iand) in/out
      */
     pub fn calculate_and_persist(&mut self) {
         let calculator = DegreeCalculator::new();

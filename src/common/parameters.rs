@@ -28,7 +28,7 @@ pub struct Config {
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Dataset {
     pub yarrp: DatasetConfig,
-    pub caida: DatasetConfig,
+    pub warts: DatasetConfig,
 }
 
 #[derive(Clone, Serialize, Deserialize)]

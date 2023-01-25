@@ -76,6 +76,12 @@ impl BrandesCalculator {
 
         let nodes = edges.keys();
 
+        if self.params.save_intermediate_results_periodically {
+            info!("Saving of intermediate results to binary files is ENABLED.");
+        } else {
+            info!("Saving of intermediate results to binary files is DISABLED.");
+        }
+
         info!("Processing {} nodes...", nodes.len());
 
         let mut partial_results: Vec<SparseList<f64>> = Vec::new();
@@ -108,7 +114,6 @@ impl BrandesCalculator {
                     if counter % batch_size == 0 {
                         Self::print_thread_progress(thread_id, counter, total_node_count);
                         if self.params.save_intermediate_results_periodically {
-                            info!("Thread {}: Saving intermediate results to binary file", thread_id);
                             local_c_list = self.persist_current_state(thread_id, counter, local_c_list);
                         }
                     }

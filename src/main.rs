@@ -35,11 +35,11 @@ fn main() {
     println!("{}", serde_json::to_string_pretty(&config).unwrap());
 
     if config.dataset.yarrp.enabled {
-        run_on_yarrp_scan(config.dataset.yarrp, &config.features);
+        run_on_yarrp_scans(config.dataset.yarrp, &config.features);
     }
 
-    if config.dataset.caida.enabled {
-        run_on_caida_scans(config.dataset.caida, &config.features);
+    if config.dataset.warts.enabled {
+        run_on_warts_scans(config.dataset.warts, &config.features);
     }
 }
 
@@ -58,7 +58,7 @@ fn read_config() -> Config {
  * Runs the whole YARRP pipeline, skipping the steps
  * disabled in the [features] section of the config
  */
-fn run_on_yarrp_scan(config: DatasetConfig, toggle: &FeatureToggle) {
+fn run_on_yarrp_scans(config: DatasetConfig, toggle: &FeatureToggle) {
     info!("### Processing YARRP dataset. ###");
     let output_paths = compute_output_paths(&config);
 
@@ -80,11 +80,11 @@ fn run_on_yarrp_scan(config: DatasetConfig, toggle: &FeatureToggle) {
 }
 
 /**
- * Runs the whole DAIDA pipeline, skipping the steps
+ * Runs the whole WARTS pipeline, skipping the steps
  * disabled in the [features] section of the config
  */
-fn run_on_caida_scans(config: DatasetConfig, toggle: &FeatureToggle) {
-    info!("### Processing CAIDA dataset. ###");
+fn run_on_warts_scans(config: DatasetConfig, toggle: &FeatureToggle) {
+    info!("### Processing WARTS dataset. ###");
     let output_paths = compute_output_paths(&config);
 
     if toggle.should_preprocess {
@@ -94,7 +94,7 @@ fn run_on_caida_scans(config: DatasetConfig, toggle: &FeatureToggle) {
         info!("Preprocessing flag is FALSE - skipping preprocessing.");
     }
 
-    info!("No merging step necessary for CAIDA scans.");
+    info!("No merging step necessary for WARTS scans.");
 
     run(config, toggle, output_paths);
 }

@@ -1,5 +1,5 @@
 [package]
-name = "yarrp-graph-builder"
+name = "graph-from-tracerouting"
 version = "0.1.0"
 edition = "2021"
 

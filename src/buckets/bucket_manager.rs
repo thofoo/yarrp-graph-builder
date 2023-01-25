@@ -4,6 +4,12 @@ use std::path::PathBuf;
 use crate::buckets::bucket::GraphBucket;
 use crate::common::structs::parse_data::{InternalNode, NodeV4, NodeV6};
 
+// Make sure to update this if you change the bucket id calculation logic.
+pub const BUCKET_COUNT: u64 = 256;
+
+/**
+ * Utility struct for managing the loaded buckets and centrally storing the IP mapping.
+ */
 pub struct GraphBucketManager<'a> {
     buckets: HashMap<u8, GraphBucket>,
     global_ip_mapping: &'a mut HashMap<u128, u64>,
@@ -92,6 +98,10 @@ impl<'a> GraphBucketManager<'a> {
         self.intermediate_path.join(format!("yarrp.{}.bin", bucket_id))
     }
 
+    /**
+     * Calculates a bucket id based on the given IP.
+     * IF YOU CHANGE THIS FUNCTION, DO NOT FORGET TO CHANGE THE CONST ON THE TOP OF THE FILE.
+     */
     fn calculate_bucket_id_v4(&mut self, ip: u32) -> u8 {
         // IPv4 has 4 bytes, 1 byte per IP segment
         // We XOR the second and fourth byte from the left
@@ -102,6 +112,10 @@ impl<'a> GraphBucketManager<'a> {
         byte1 ^ byte2
     }
 
+    /**
+     * Calculates a bucket id based on the given IP.
+     * IF YOU CHANGE THIS FUNCTION, DO NOT FORGET TO CHANGE THE CONST ON THE TOP OF THE FILE.
+     */
     fn calculate_bucket_id_v6(&mut self, ip: u128) -> u8 {
         // IPv6 has 16 byte, 2 bytes per IP segment
         // We XOR last byte of public half + last byte of private half
